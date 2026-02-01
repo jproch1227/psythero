@@ -67,7 +67,7 @@ with st.container():
         id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
         terapeuta = st.text_input("Imię i nazwisko terapeuty")
         bio = st.text_area("1. Dane biograficzne", height=150)
-        zasoby = st.text_input("Zasoby pacjenta", height=150)
+        zasoby = st.text_input("Zasoby pacjenta")
         problemy = st.text_area("2. Problemy i objawy", height=150)
     with col2:
         mysli = st.text_area("Kluczowe myśli / Przekonania", height=150)
