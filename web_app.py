@@ -3,167 +3,209 @@ from google import genai
 from datetime import datetime
 import re
 
-# --- KONFIGURACJA I STYL ---
+# --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide")
 
+# --- INICJALIZACJA STANU (Zapobiega AttributeError) ---
+keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
+        'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'hipotezy']
+for key in keys:
+    if key not in st.session_state:
+        st.session_state[key] = ""
+if 'step' not in st.session_state:
+    st.session_state.step = 1
+
+# --- CSS DLA WYGLĄDU I TOOLTIPÓW ---
 st.markdown("""
     <style>
+    /* Panel boczny */
     [data-testid="stSidebar"] { background-color: #1a365d; color: white; }
     
-    /* STYLE DLA ETYKIET I IKONEK INFO */
-    .label-container { display: flex; align-items: center; margin-bottom: -15px; margin-top: 10px; }
-    .label-text { font-size: 14px; font-weight: 600; color: #31333F; margin-right: 5px; }
-    .info-tag { 
-        background-color: #2b6cb0; color: white; border-radius: 50%; 
-        width: 16px; height: 16px; display: inline-flex; 
-        align-items: center; justify-content: center; 
-        font-size: 10px; font-weight: bold; cursor: help;
-        font-family: sans-serif;
+    /* Kontener etykiety z ikonką */
+    .custom-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+        margin-top: 15px;
+    }
+    .label-text {
+        font-size: 14px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-right: 8px;
+    }
+    
+    /* Ikonka INFO (i) */
+    .info-wrapper {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+    }
+    .info-icon {
+        background-color: #2b6cb0;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        font-family: serif;
+    }
+    
+    /* Dymek z informacją (Tooltip) */
+    .tooltip-content {
+        visibility: hidden;
+        width: 250px;
+        background-color: #2d3748;
+        color: #fff;
+        text-align: left;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 100;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 12px;
+        font-weight: normal;
+        line-height: 1.4;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+    }
+    .info-wrapper:hover .tooltip-content {
+        visibility: visible;
+        opacity: 1;
     }
 
-    /* RAPORT FINALNY */
+    /* Wygląd raportu */
     .report-card {
         background-color: white; padding: 20mm; color: black;
         font-family: 'Times New Roman', serif; border: 1px solid #000;
-        line-height: 1.5;
     }
-    .report-card h1 { text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; }
-    .report-card h2 { color: #1a365d; border-bottom: 1px solid #ccc; margin-top: 20px; }
-    .report-card table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-    .report-card th, .report-card td { border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }
-    .report-card th { background-color: #f2f2f2; }
-    .warning { color: #c53030; font-weight: bold; }
-    
-    /* Ukrywanie domyślnych etykiet Streamlit */
-    div[data-testid="stWidgetLabel"] { display: none; }
+    .stTextArea textarea { border: 1px solid #4a5568 !important; height: 130px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNKCJA FILTRUJĄCA (NAPRAWIA PROBLEM KODU NA STRONIE) ---
-def extract_html(text):
-    """Wyciąga tylko zawartość między tagami HTML, usuwając komentarze AI."""
-    # Szukaj wszystkiego od pierwszego tagu (np. <h1> lub <div>) do ostatniego
-    match = re.search(r'(<(h1|div|table|section).*<\/.*>)', text, re.DOTALL | re.IGNORECASE)
-    if match:
-        return match.group(1)
-    # Jeśli nie znalazło tagów, usuń chociaż backticki markdowna
-    text = re.sub(r'```html', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'```', '', text)
-    return text
-
-def render_label(text, tooltip):
-    """Renderuje tekst etykiety z małą niebieską ikonką info."""
+# --- FUNKCJE POMOCNICZE ---
+def render_info_label(label, tooltip):
+    """Renderuje etykietę z ikonką 'i' po prawej stronie."""
     st.markdown(f"""
-        <div class="label-container">
-            <span class="label-text">{text}</span>
-            <span class="info-tag" title="{tooltip}">i</span>
+        <div class="custom-label">
+            <span class="label-text">{label}</span>
+            <div class="info-wrapper">
+                <div class="info-icon">i</div>
+                <div class="tooltip-content">{tooltip}</div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
+def extract_html(text):
+    match = re.search(r'(<(h1|div|table|section).*<\/.*>)', text, re.DOTALL | re.IGNORECASE)
+    if match: return match.group(1)
+    return re.sub(r'```html|```', '', text, flags=re.IGNORECASE).strip()
+
 # --- SŁOWNIK POMOCY ---
-INFO = {
-    "diagnoza": "Wpisz kod ICD-10/DSM-5. AI użyje tego do zaproponowania protokołu.",
-    "ryzyko": "Opisz myśli S., plany i czynniki chroniące. Krytyczne dla bezpieczeństwa.",
-    "problemy": "Główne trudności pacjenta. AI pogrupuje je w triadę i zidentyfikuje procesy.",
-    "mysli": "Dosłowne cytaty. AI zidentyfikuje w nich zniekształcenia poznawcze.",
-    "p_sytuacja": "Kontekst zdarzenia: Kto, co, gdzie, kiedy?",
-    "p_mysl": "Co dokładnie przemknęło przez głowę w tej chwili?",
+TOOLTIPS = {
+    "diagnoza": "Wpisz kod ICD-10 lub DSM-5 (np. F32.1).",
+    "ryzyko": "Opisz charakter myśli, plany i zabezpieczenia. AI wygeneruje alert.",
+    "problemy": "Główne trudności (np. izolacja, anhedonia).",
+    "mysli": "Dosłowne cytaty (np. 'Nic nie ma sensu').",
+    "p_sit": "Kontekst zdarzenia: Kto? Gdzie? Kiedy?",
+    "p_mysl": "Co dokładnie przemknęło przez głowę?",
     "p_emocja": "Emocje i odczucia z ciała.",
-    "p_zachowanie": "Co pacjent zrobił lub czego uniknął?",
-    "p_koszt": "Skutek zachowania: Krótka ulga vs długi koszt.",
+    "p_zach": "Co pacjent zrobił lub czego uniknął?",
+    "p_koszt": "Skutek: Krótka ulga vs Długi koszt.",
     "hipotezy": "Twoja interpretacja (np. schemat wadliwości)."
 }
 
-# --- LOGIKA SESJI ---
-if 'step' not in st.session_state: st.session_state.step = 1
-def next_step(): st.session_state.step += 1
-def prev_step(): st.session_state.step -= 1
-
 # --- PANEL BOCZNY ---
 with st.sidebar:
-    st.title("⚙️ Nawigacja")
+    st.title("🛡️ Panel Kontrolny")
     api_key = st.text_input("Klucz Gemini API", type="password")
     st.divider()
-    st.progress(st.session_state.step / 5)
-    if st.button("🗑️ Reset"):
-        for k in list(st.session_state.keys()): del st.session_state[k]
+    st.write(f"Krok {st.session_state.step} / 5")
+    if st.button("🗑️ Resetuj formularz"):
+        st.session_state.clear()
         st.rerun()
 
-# --- KROKI FORMULARZA ---
+# --- NAWIGACJA KROKÓW ---
 if st.session_state.step == 1:
-    st.subheader("Krok 1: Dane podstawowe")
-    st.session_state.id_p = st.text_input("ID", value=st.session_state.get('id_p', ""), placeholder="ID Pacjenta")
-    st.session_state.terapeuta = st.text_input("T", value=st.session_state.get('terapeuta', ""), placeholder="Terapeuta")
+    st.subheader("🔵 Krok 1: Dane podstawowe")
+    st.session_state.id_p = st.text_input("ID", value=st.session_state.id_p, placeholder="ID Pacjenta")
+    st.session_state.terapeuta = st.text_input("T", value=st.session_state.terapeuta, placeholder="Terapeuta")
     
-    render_label("Diagnoza", INFO["diagnoza"])
-    st.session_state.diagnoza = st.text_input("d", value=st.session_state.get('diagnoza', ""))
+    render_info_label("Diagnoza (ICD/DSM)", TOOLTIPS["diagnoza"])
+    st.session_state.diagnoza = st.text_input("diag_inp", value=st.session_state.diagnoza, label_visibility="collapsed")
     
-    render_label("Ocena ryzyka", INFO["ryzyko"])
-    st.session_state.ryzyko = st.text_area("r", value=st.session_state.get('ryzyko', ""))
-    st.button("Dalej ➡️", on_click=next_step)
+    render_info_label("Ocena ryzyka / Plan bezpieczeństwa", TOOLTIPS["ryzyko"])
+    st.session_state.ryzyko = st.text_area("ryz_inp", value=st.session_state.ryzyko, label_visibility="collapsed")
+    
+    if st.button("Dalej ➡️"): st.session_state.step = 2; st.rerun()
 
 elif st.session_state.step == 2:
-    st.subheader("Krok 2: Objawy i Myśli")
-    render_label("Problemy", INFO["problemy"])
-    st.session_state.problemy = st.text_area("p", value=st.session_state.get('problemy', ""))
+    st.subheader("🟣 Krok 2: Objawy i Myśli")
+    render_info_label("Objawy i problemy", TOOLTIPS["problemy"])
+    st.session_state.problemy = st.text_area("prob_inp", value=st.session_state.problemy, label_visibility="collapsed")
     
-    render_label("Myśli automatyczne (Cytaty)", INFO["mysli"])
-    st.session_state.mysli_raw = st.text_area("m", value=st.session_state.get('mysli_raw', ""))
+    render_info_label("Myśli automatyczne (Cytaty)", TOOLTIPS["mysli"])
+    st.session_state.mysli_raw = st.text_area("mysli_inp", value=st.session_state.mysli_raw, label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
-    c1.button("⬅️ Wstecz", on_click=prev_step)
-    c2.button("Dalej ➡️", on_click=next_step)
+    if c1.button("⬅️ Wstecz"): st.session_state.step = 1; st.rerun()
+    if c2.button("Dalej ➡️"): st.session_state.step = 3; st.rerun()
 
 elif st.session_state.step == 3:
-    st.subheader("Krok 3: Pętla CBT")
-    render_label("Sytuacja", INFO["p_sytuacja"])
-    st.session_state.p_sit = st.text_area("s1", value=st.session_state.get('p_sit', ""))
-    render_label("Myśl", INFO["p_mysl"])
-    st.session_state.p_mysl = st.text_area("s2", value=st.session_state.get('p_mysl', ""))
-    render_label("Zachowanie", INFO["p_zachowanie"])
-    st.session_state.p_zach = st.text_area("s3", value=st.session_state.get('p_zach', ""))
+    st.subheader("🟣 Krok 3: Pętla Podtrzymująca")
+    render_info_label("Sytuacja (Wyzwalacz)", TOOLTIPS["p_sit"])
+    st.session_state.p_sit = st.text_area("syt_inp", value=st.session_state.p_sit, label_visibility="collapsed")
+    
+    render_info_label("Myśl Automatyczna", TOOLTIPS["p_mysl"])
+    st.session_state.p_mysl = st.text_area("mysl_inp", value=st.session_state.p_mysl, label_visibility="collapsed")
+    
+    render_info_label("Emocja / Ciało", TOOLTIPS["p_emocja"])
+    st.session_state.p_emocja = st.text_area("emo_inp", value=st.session_state.p_emocja, label_visibility="collapsed")
+    
+    render_info_label("Zachowanie (Strategia)", TOOLTIPS["p_zach"])
+    st.session_state.p_zach = st.text_area("zach_inp", value=st.session_state.p_zach, label_visibility="collapsed")
+    
+    render_info_label("Konsekwencja (Koszt)", TOOLTIPS["p_koszt"])
+    st.session_state.p_koszt = st.text_area("koszt_inp", value=st.session_state.p_koszt, label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
-    c1.button("⬅️ Wstecz", on_click=prev_step)
-    c2.button("Dalej ➡️", on_click=next_step)
+    if c1.button("⬅️ Wstecz"): st.session_state.step = 2; st.rerun()
+    if c2.button("Dalej ➡️"): st.session_state.step = 4; st.rerun()
 
 elif st.session_state.step == 4:
-    st.subheader("Krok 4: Relacja i Hipotezy")
-    st.session_state.relacja = st.text_area("Relacja", value=st.session_state.get('relacja', ""), placeholder="Relacja terapeutyczna...")
-    st.session_state.historia = st.text_area("Historia", value=st.session_state.get('historia', ""), placeholder="Kontekst rodzinny...")
-    render_label("Hipotezy", INFO["hipotezy"])
-    st.session_state.hipotezy = st.text_area("h", value=st.session_state.get('hipotezy', ""))
+    st.subheader("🔵 Krok 4: Relacja i Hipotezy")
+    st.session_state.relacja = st.text_area("Relacja", value=st.session_state.relacja, placeholder="Relacja terapeutyczna...")
+    st.session_state.historia = st.text_area("Historia", value=st.session_state.historia, placeholder="Kontekst rodzinny...")
+    
+    render_info_label("Hipotezy kliniczne", TOOLTIPS["hipotezy"])
+    st.session_state.hipotezy = st.text_area("hipo_inp", value=st.session_state.hipotezy, label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
-    c1.button("⬅️ Wstecz", on_click=prev_step)
-    c2.button("Dalej ➡️", on_click=next_step)
+    if c1.button("⬅️ Wstecz"): st.session_state.step = 3; st.rerun()
+    if c2.button("Dalej ➡️"): st.session_state.step = 5; st.rerun()
 
 elif st.session_state.step == 5:
-    st.subheader("Krok 5: Generowanie")
-    add_goals = st.checkbox("Zaproponuj cele SMART", value=True)
-    add_protocol = st.checkbox("Zaproponuj protokół leczenia", value=True)
-    
-    if st.button("🚀 GENERUJ RAPORT"):
+    st.subheader("🚀 Krok 5: Generowanie")
+    if st.button("GENERUJ RAPORT"):
         if not api_key: st.error("Podaj klucz API!")
         else:
-            client = genai.Client(api_key=api_key)
-            prompt = f"""Jesteś superwizorem CBT. Wygeneruj raport kliniczny w czystym HTML. 
-            NIE PISZ żadnych wyjaśnień przed ani po kodzie. NIE używaj backticków ```.
-            
-            WYMAGANE SEKCJE (Wypełnij na podstawie danych):
-            1. Alert Ryzyka (jeśli dotyczy).
-            2. Tabela Pętli Becka (Sytuacja, Myśl, Zachowanie).
-            3. Triada Becka i Zniekształcenia Poznawcze.
-            4. Tabela Padesky'ego (z Twoimi propozycjami myśli alternatywnych).
-            5. Cele SMART i Protokół leczenia (etapy).
-            
-            DANE: ID: {st.session_state.id_p}, Diagnoza: {st.session_state.diagnoza}, 
-            Problemy: {st.session_state.problemy}, Myśli: {st.session_state.mysli_raw},
-            Pętla: {st.session_state.p_sit} / {st.session_state.p_mysl} / {st.session_state.p_zach},
-            Historia/Hipotezy: {st.session_state.historia} / {st.session_state.hipotezy}.
-            """
-            
-            with st.spinner('AI buduje raport...'):
-                response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
-                clean_html = extract_html(response.text)
-                st.markdown(f"<div class='report-card'>{clean_html}</div>", unsafe_allow_html=True)
+            try:
+                client = genai.Client(api_key=api_key)
+                prompt = f"""Jesteś superwizorem CBT. Stwórz szczegółowy raport kliniczny HTML. 
+                Uwzględnij Tabelę Becka, Triadę, Zniekształcenia (z {st.session_state.mysli_raw}) oraz plan SMART.
+                Dane: Diagnoza {st.session_state.diagnoza}, Sytuacja {st.session_state.p_sit}, Myśl {st.session_state.p_mysl}.
+                """
+                with st.spinner('Analizowanie...'):
+                    response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
+                    st.session_state.final_report = extract_html(response.text)
+            except Exception as e: st.error(f"Błąd: {e}")
+
+    if 'final_report' in st.session_state:
+        st.markdown(f"<div class='report-card'>{st.session_state.final_report}</div>", unsafe_allow_html=True)
