@@ -36,6 +36,10 @@ st.markdown("""
         text-align: center; border: 2px solid black; padding: 10px;
         margin-bottom: 20px; font-weight: bold; text-transform: uppercase; font-size: 18px;
     }
+    /* Stylizacja pól tekstowych na pełną szerokość */
+    .stTextArea textarea {
+        border: 1px solid #cbd5e0 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -61,23 +65,27 @@ with st.sidebar:
 st.title("🩺 System Kliniczny CBT")
 st.markdown("Wypełnij dane pacjenta, aby otrzymać kompletną tabelę pracy klinicznej.")
 
+# JEDNA KOLUMNA - PEŁNA SZEROKOŚĆ
 with st.container():
-    col1, col2 = st.columns(2)
-    with col1:
-        id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
-        terapeuta = st.text_input("Imię i nazwisko terapeuty")
-        bio = st.text_area("1. Dane biograficzne", height=150)
-        zasoby = st.text_input("Zasoby pacjenta")
-        problemy = st.text_area("2. Problemy i objawy", height=150)
-    with col2:
-        mysli = st.text_area("Kluczowe myśli / Przekonania", height=150)
-        rodzina = st.text_area("Historia rodzinna", height=150)
-        cele = st.text_area("Cele terapii", height=68)
+    id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
+    terapeuta = st.text_input("Imię i nazwisko terapeuty")
+    
+    st.markdown("---") # Oddzielenie danych podstawowych od wywiadu
+    
+    bio = st.text_area("1. Dane biograficzne", height=150)
+    zasoby = st.text_input("Zasoby pacjenta")
+    problemy = st.text_area("2. Problemy i objawy", height=200)
+    mysli = st.text_area("Kluczowe myśli / Przekonania", height=200)
+    rodzina = st.text_area("Historia rodzinna", height=200)
+    cele = st.text_area("Cele terapii", height=100)
 
-# NOWOŚĆ: Pole na dodatkowe życzenia do raportu
+st.divider()
+
+# Pole na dodatkowe życzenia
 st.subheader("✍️ Uwagi końcowe do wersji ostatecznej")
 custom_notes = st.text_area("Co jeszcze powinniśmy uwzględnić w tym konkretnym raporcie?", 
-                            placeholder="Np. Chcę poradę dotyczącą tego w jaki sposób pracować z arachnofobią.")
+                            placeholder="Np. Chcę poradę dotyczącą tego w jaki sposób pracować z arachnofobią.",
+                            height=100)
 
 generate_btn = st.button("🚀 GENERUJ KOMPLETNĄ DOKUMENTACJĘ")
 
@@ -115,7 +123,6 @@ if generate_btn:
                 response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
                 wynik = wyczysc_html(response.text)
                 
-                # Wyświetlanie alertu jeśli ryzyko wykryte
                 if "Stabilny" not in wynik and ("RYZYKO" in wynik.upper() or "ALERT" in wynik.upper()):
                     st.markdown("<div class='risk-alert'>⚠️ UWAGA: WYKRYTO SYGNAŁY WYMAGAJĄCE SZCZEGÓLNEJ CZUJNOŚCI (RYZYKO/AUTOAGRESJA)</div>", unsafe_allow_html=True)
                 
@@ -137,6 +144,3 @@ if generate_btn:
                 
         except Exception as e:
             st.error(f"Błąd systemu: {e}")
-
-
-
