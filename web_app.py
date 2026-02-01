@@ -65,8 +65,9 @@ with st.container():
     col1, col2 = st.columns(2)
     with col1:
         id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
-        terapeuta = st.text_input("Terapeuta")
+        terapeuta = st.text_input("Imię i nazwisko terapeuty")
         bio = st.text_area("1. Dane biograficzne / Wywiad", height=150)
+        zasoby = st.text_input("Zasoby pacjenta")
         problemy = st.text_area("2. Problemy i objawy", height=150)
     with col2:
         mysli = st.text_area("Kluczowe myśli / Przekonania", height=150)
@@ -75,8 +76,8 @@ with st.container():
 
 # NOWOŚĆ: Pole na dodatkowe życzenia do raportu
 st.subheader("✍️ Uwagi końcowe do wersji ostatecznej")
-custom_notes = st.text_area("Co jeszcze AI powinno uwzględnić w tym konkretnym raporcie?", 
-                            placeholder="Np. Dodaj informację o konieczności konsultacji z psychiatrą lub o lęku przed psami.")
+custom_notes = st.text_area("Co jeszcze powinniśmy uwzględnić w tym konkretnym raporcie?", 
+                            placeholder="Np. Chcę poradę dotyczącą tego w jaki sposób pracować z arachnofobią.")
 
 generate_btn = st.button("🚀 GENERUJ KOMPLETNĄ DOKUMENTACJĘ")
 
@@ -98,7 +99,7 @@ if generate_btn:
             
             STRUKTURA DOKUMENTU:
             1. ALERT RYZYKA (na samym początku, tylko jeśli są sygnały zagrożenia).
-            2. TABELA PRACY KLINICZNEJ (14 punktów: Dane bio, Problemy, Aktywacja, Błędna interpretacja, Zagrożenie, Zabezpieczenia, Skupienie uwagi, Czynniki podtrzymujące, Przeszłość, Przekonania, Cele, Techniki, Trudności, Wynik).
+            2. TABELA PRACY KLINICZNEJ (14 punktów: Dane bio, Zasoby, Problemy, Aktywacja, Błędna interpretacja, Zagrożenie, Zabezpieczenia, Skupienie uwagi, Czynniki podtrzymujące, Przeszłość, Przekonania, Cele, Techniki, Trudności, Wynik).
             3. MODUŁ SUPERWIZYJNY (Czego się wystrzegać, język, narzędzia).
             4. {extras}
             
@@ -108,7 +109,7 @@ if generate_btn:
             - Wyłącznie czysty kod HTML (tabele <table>).
             - Styl surowy, kliniczny, bez wstępów.
             
-            DANE PACJENTA: ID: {id_p}, Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Rodzina: {rodzina}, Cele: {cele}."""
+            DANE PACJENTA: ID: {id_p}, Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Zasoby {zasoby}, Rodzina: {rodzina}, Cele: {cele}."""
 
             with st.spinner('Analizowanie przypadku klinicznego...'):
                 response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
@@ -136,3 +137,4 @@ if generate_btn:
                 
         except Exception as e:
             st.error(f"Błąd systemu: {e}")
+
