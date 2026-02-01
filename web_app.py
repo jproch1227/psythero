@@ -62,12 +62,12 @@ st.title("🩺 System Kliniczny CBT")
 st.markdown("Wypełnij dane pacjenta, aby otrzymać kompletną tabelę pracy klinicznej.")
 
 with st.container():
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(3)
     with col1:
         id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
         terapeuta = st.text_input("Imię i nazwisko terapeuty")
-        bio = st.text_area("1. Dane biograficzne / Wywiad", height=150)
-        zasoby = st.text_input("Zasoby pacjenta")
+        bio = st.text_area("1. Dane biograficzne", height=150)
+        zasoby = st.text_input("Zasoby pacjenta", height=150)
         problemy = st.text_area("2. Problemy i objawy", height=150)
     with col2:
         mysli = st.text_area("Kluczowe myśli / Przekonania", height=150)
@@ -137,4 +137,5 @@ if generate_btn:
                 
         except Exception as e:
             st.error(f"Błąd systemu: {e}")
+
 
