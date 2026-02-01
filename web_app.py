@@ -112,14 +112,14 @@ def extract_html(text):
 TOOLTIPS = {
     "diagnoza": "Wpisz kod ICD-10 lub DSM-5 (np. F32.1).",
     "ryzyko": "Opisz charakter myśli, plany i zabezpieczenia. AI wygeneruje alert.",
-    "problemy": "Główne trudności (np. izolacja, anhedonia).",
-    "mysli": "Dosłowne cytaty (np. 'Nic nie ma sensu').",
+    "problemy": "Hipotezy kliniczne to robocze, weryfikowalne założenia terapeuty, które wyjaśniają, co wyzwala i podtrzymuje trudności pacjenta. Nie są faktami ani diagnozą – służą kierowaniu interwencjami i są modyfikowane w toku terapii.",
+    "mysli": "Myśli automatyczne (cytaty) to dosłowne sformułowania pacjenta, które pojawiają się w konkretnych sytuacjach i bezpośrednio wpływają na emocje oraz zachowanie. Muszą pochodzić od pacjenta (lub być wiernym zapisem jego wypowiedzi) – AI może je jedynie porządkować, grupować i mapować na procesy CBT, ale nie tworzyć.",
     "p_sit": "Kontekst zdarzenia: Kto? Gdzie? Kiedy?",
     "p_mysl": "Co dokładnie przemknęło przez głowę?",
     "p_emocja": "Emocje i odczucia z ciała.",
     "p_zach": "Co pacjent zrobił lub czego uniknął?",
     "p_koszt": "Skutek: Krótka ulga vs Długi koszt.",
-    "hipotezy": "Twoja interpretacja (np. schemat wadliwości)."
+    "hipotezy": "Hipotezy kliniczne to robocze, weryfikowalne założenia terapeuty, które wyjaśniają, co wyzwala i podtrzymuje trudności pacjenta. Nie są faktami ani diagnozą – służą kierowaniu interwencjami i są modyfikowane w toku terapii."
 }
 
 # --- PANEL BOCZNY ---
@@ -135,8 +135,8 @@ with st.sidebar:
 # --- NAWIGACJA KROKÓW ---
 if st.session_state.step == 1:
     st.subheader("🔵 Krok 1: Dane podstawowe")
-    st.session_state.id_p = st.text_input("ID", value=st.session_state.id_p, placeholder="ID Pacjenta")
-    st.session_state.terapeuta = st.text_input("T", value=st.session_state.terapeuta, placeholder="Terapeuta")
+    st.session_state.id_p = st.text_input("ID Pacjenta", value=st.session_state.id_p, placeholder="Np. 001")
+    st.session_state.terapeuta = st.text_input("Imię i nazwisko Terapeuty", value=st.session_state.terapeuta, placeholder="Imię i nazwisko")
     
     render_info_label("Diagnoza (ICD/DSM)", TOOLTIPS["diagnoza"])
     st.session_state.diagnoza = st.text_input("diag_inp", value=st.session_state.diagnoza, label_visibility="collapsed")
@@ -209,3 +209,4 @@ elif st.session_state.step == 5:
 
     if 'final_report' in st.session_state:
         st.markdown(f"<div class='report-card'>{st.session_state.final_report}</div>", unsafe_allow_html=True)
+
