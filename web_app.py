@@ -87,42 +87,40 @@ generate_btn = st.button("🚀 GENERUJ KOMPLET DOKUMENTÓW")
 # --- LOGIKA GENEROWANIA ---
 if generate_btn:
     if not api_key:
-        st.error("Błąd: Wklej klucz API w panelu bocznym!")
+        st.error("Wklej klucz API w lewym panelu!")
     elif not id_p:
-        st.error("Błąd: Podaj ID Pacjenta!")
+        st.error("Podaj ID Pacjenta!")
     else:
         try:
             client = genai.Client(api_key=api_key)
             
             extra = ""
-            if add_plan: extra += "- Szczegółowy plan 5 kolejnych sesji (techniki i cele).\n"
-            if add_relax: extra += "- 3 spersonalizowane techniki relaksacyjne.\n"
+            if add_plan: extra += "- Plan 5 kolejnych sesji.\n"
+            if add_relax: extra += "- 3 techniki relaksacyjne.\n"
 
             prompt = f"""Jesteś certyfikowanym superwizorem CBT. Przygotuj profesjonalną EKSPERTYZĘ KLINICZNĄ dla pacjenta {id_p}. 
             ZASADY: 
-            1. Zacznij bezpośrednio od nagłówka # EKSPERTYZA KLINICZNA. 
-            2. Nie używaj żadnych wstępów ani komentarzy bocznych. 
-            3. Tabelę Padesky'ego (5 obszarów) przygotuj jako czytelną tabelę HTML (użyj tagów <table>, <tr>, <td>).
-            TREŚĆ: Tabela Padesky'ego, Analiza Bio-Psycho-Społeczna, Konceptualizacja, Analiza Superwizyjna (przeniesienie/przeciwprzeniesienie).
-            {extra}
-            DANE PACJENTA: Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Rodzina: {rodzina}, Cele: {cele}"""
+            1. Zacznij bezpośrednio od nagłówka #. 
+            2. Nie używaj żadnych wstępów. 
+            3. TABELĘ PADESKY'EGO WYGENERUJ W CZYSTYM HTML (użyj <table>, <tr>, <td>).
+            4. NIE UMIESZCZAJ KODU HTML W BLOKACH KODU (nie używaj znaków ```).
+            DANE: Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Rodzina: {rodzina}, Cele: {cele}"""
 
-            with st.spinner('Trwa analizowanie przypadku klinicznego przez Gemini...'):
+            with st.spinner('Generowanie raportu...'):
                 response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
                 
-                st.markdown("---")
-                # KLUCZOWA POPRAWKA: unsafe_allow_html=True pozwala na wyświetlenie tabeli HTML
-                st.markdown(f"<div class='report-card'>{response.text}</div>", unsafe_allow_html=True)
+                # OCZYSZCZANIE TEKSTU (Kluczowy krok)
+                czysty_tekst = response.text.replace("```html", "").replace("```", "").strip()
                 
-                st.download_button(
-                    label="Pobierz raport (TXT)",
-                    data=response.text,
-                    file_name=f"Ekspertyza_{id_p}_{datetime.now().strftime('%Y%m%d')}.txt",
-                    mime="text/plain"
-                )
+                st.markdown("---")
+                # Wyświetlanie z włączonym HTML
+                st.markdown(f"<div class='report-card'>{czysty_tekst}</div>", unsafe_allow_html=True)
+                
+                st.download_button("Pobierz raport (TXT)", czysty_tekst, file_name=f"Raport_{id_p}.txt")
                 
         except Exception as e:
-            st.error(f"Wystąpił błąd podczas generowania: {e}")
-
+            st.error(f"Błąd: {e}")
+            
 st.divider()
 st.caption("Aplikacja wspierająca pracę terapeuty CBT. Wykorzystuje model Google Gemini 2.0 Flash.")
+
