@@ -3,84 +3,84 @@ from google import genai
 from datetime import datetime
 
 # --- KONFIGURACJA STRONY ---
-st.set_page_config(page_title="Asystent CBT Premium", page_icon="🩺", layout="wide")
+st.set_page_config(page_title="Asystent CBT", page_icon="🩺", layout="wide")
 
-# Zaawansowany CSS dla profesjonalnego wyglądu raportu
+# Zaawansowany CSS dla poprawy widoczności liter i kolorystyki
 st.markdown("""
     <style>
-    .report-font { font-family: 'Inter', sans-serif; line-height: 1.6; color: #1a202c; }
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-    .stTabs [data-baseweb="tab"] { height: 50px; white-space: pre-wrap; background-color: #f1f5f9; border-radius: 4px 4px 0 0; padding: 10px 20px; }
-    .stTabs [aria-selected="true"] { background-color: #1a365d ! Catholicism; color: white !important; }
-    section[data-testid="stSidebar"] { background-color: #f8fafc; }
+    /* Stylowanie panelu bocznego (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #1a365d;
+        color: white;
+    }
+    /* Naprawa koloru tekstów w panelu bocznym */
+    [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p {
+        color: white !important;
+    }
+    /* Białe pola wprowadzania w ciemnym panelu */
+    [data-testid="stSidebar"] .stTextArea textarea, [data-testid="stSidebar"] .stTextInput input {
+        background-color: #ffffff;
+        color: #1a202c;
+    }
+    /* Styl raportu po prawej stronie */
+    .report-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
     </style>
     """, unsafe_allow_html=True)
 
+# --- PANEL BOCZNY (CAŁY FORMULARZ) ---
 with st.sidebar:
-    st.title("⚙️ Konfiguracja")
-    api_key = st.text_input("Gemini API Key", type="password")
+    st.title("🩺 Panel Sterowania")
+    api_key = st.text_input("Klucz Gemini API", type="password")
+    st.divider()
+    
+    st.subheader("Wywiad Kliniczny")
+    id_p = st.text_input("ID Pacjenta", placeholder="np. 017")
+    bio = st.text_area("Bio / Dane medyczne", height=100)
+    problemy = st.text_area("Trudności / Objawy", height=100)
+    mysli = st.text_area("Myśli / Przekonania", height=100)
+    rodzina = st.text_area("Kontekst rodzinny", height=100)
+    
     st.divider()
     st.subheader("Tryb Interaktywny")
     add_plan = st.checkbox("Dodaj Plan 15 sesji")
-    add_relax = st.checkbox("Dodaj Techniki Relaksacyjne")
-    st.info("Zaznacz opcje powyżej, aby rozszerzyć raport.")
+    add_relax = st.checkbox("Dodaj Relaksacje")
+    
+    generate_btn = st.button("🚀 GENERUJ RAPORT")
 
-st.title("🩺 Kliniczny Asystent CBT")
-st.caption("Profesjonalny generator dokumentacji klinicznej i arkuszy terapeutycznych")
+# --- GŁÓWNA CZĘŚĆ (WYŚWIETLANIE) ---
+st.header("📄 Wynik Analizy Klinicznej")
 
-# --- FORMULARZ ---
-col1, col2 = st.columns(2)
-with col1:
-    id_p = st.text_input("ID Pacjenta", placeholder="np. 017")
-    bio = st.text_area("Dane Bio/Medyczne", height=150)
-    problemy = st.text_area("Główne trudności", height=150)
-with col2:
-    mysli = st.text_area("Kluczowe myśli/przekonania", height=150)
-    rodzina = st.text_area("Kontekst rodzinny", height=150)
-
-# --- PROCES GENEROWANIA ---
-if st.button("🚀 GENERUJ KOMPLET DOKUMENTÓW"):
+if generate_btn:
     if not api_key:
-        st.error("Wklej klucz API w panelu bocznym!")
+        st.error("Wklej klucz API w lewym panelu!")
     elif not id_p:
         st.error("Podaj ID Pacjenta!")
     else:
         try:
             client = genai.Client(api_key=api_key)
             
-            # Budowanie dynamicznego promptu
-            extra_sections = ""
-            if add_plan: extra_sections += "- Szczegółowy plan 15 sesji terapeutycznych.\n"
-            if add_relax: extra_sections += "- Zestaw 3 spersonalizowanych technik relaksacyjnych.\n"
+            extra = ""
+            if add_plan: extra += "- Plan 15 sesji terapeutycznych.\n"
+            if add_relax: extra += "- 3 techniki relaksacyjne.\n"
 
-            p1 = f"""Jesteś certyfikowanym superwizorem CBT. Przygotuj profesjonalną EKSPERTYZĘ KLINICZNĄ dla pacjenta {id_p}. 
-            ZASADY: 1. Zacznij bezpośrednio od nagłówka #. 2. Nie pisz wstępów typu 'Oto raport'. 3. Używaj czytelnych tabel Markdown.
-            TREŚĆ:
-            - Tabela Padesky'ego (5 obszarów).
-            - Analiza Bio-Psycho-Społeczna (uwzględnij: {bio}).
-            - Konceptualizacja (mechanizmy podtrzymujące).
-            - Analiza Superwizyjna (Przeniesienie/Przeciwprzeniesienie).
-            {extra_sections}
-            DANE: {bio}, {problemy}, {mysli}, {rodzina}."""
+            prompt = f"""Jesteś superwizorem CBT. Przygotuj profesjonalną EKSPERTYZĘ KLINICZNĄ (Tabela Padesky'ego, Analiza Bio-Psycho-Społeczna, Konceptualizacja, Superwizja) oraz ARKUSZ DLA PACJENTA.
+            ZASADY: Zacznij bezpośrednio od treści. Używaj tabel HTML. Nie pisz wstępów.
+            DODATKI: {extra}
+            DANE: Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Rodzina: {rodzina}, ID: {id_p}"""
 
-            p2 = f"""Przygotuj ARKUSZ PRACY WŁASNEJ DLA PACJENTA {id_p}. 
-            ZASADY: Zacznij od nagłówka # ARKUSZ PRACY WŁASNEJ. Nie pisz komentarzy bocznych.
-            TREŚĆ: Stwórz tabelę 'Zapis myśli' wypełnioną przykładami bazującymi na: {mysli}. Pisz językiem wspierającym."""
-
-            with st.spinner('Trwa generowanie dokumentacji wysokiej jakości...'):
-                r1 = client.models.generate_content(model='gemini-2.0-flash', contents=p1)
-                r2 = client.models.generate_content(model='gemini-2.0-flash', contents=p2)
-
-                st.markdown("---")
-                tab1, tab2 = st.tabs(["📋 RAPORT KLINICZNY", "🏠 ZADANIE DOMOWE"])
+            with st.spinner('Gemini przetwarza dane...'):
+                response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
                 
-                with tab1:
-                    st.markdown(f"<div class='report-font'>{r1.text}</div>", unsafe_allow_html=True)
-                with tab2:
-                    st.markdown(f"<div class='report-font'>{r2.text}</div>", unsafe_allow_html=True)
-                    
+                st.markdown("---")
+                # Wyświetlamy raport w ładnym kontenerze
+                st.markdown(f"<div class='report-container'>{response.text}</div>", unsafe_allow_html=True)
+                
         except Exception as e:
-            st.error(f"Błąd komunikacji z modelem: {e}")
-
-st.divider()
-st.caption("Pamiętaj o anonimizacji danych przed wysłaniem do AI.")
+            st.error(f"Błąd: {e}")
+else:
+    st.info("Wypełnij dane w panelu po lewej stronie i kliknij przycisk, aby wygenerować analizę.")
