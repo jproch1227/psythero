@@ -6,12 +6,13 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Pro Dashboard", layout="wide")
 
-# CSS - Styl Kliniczny (Biała karta, czarne ramki)
+# CSS - Styl Kliniczny i precyzyjne wymiary ramek
 st.markdown("""
     <style>
     [data-testid="stSidebar"] { background-color: #1a365d; color: white; }
     [data-testid="stSidebar"] label, [data-testid="stSidebar"] p { color: white !important; }
     
+    /* Styl raportu końcowego */
     .report-card {
         background-color: white;
         padding: 15mm;
@@ -19,26 +20,21 @@ st.markdown("""
         font-family: 'Times New Roman', serif;
         border: 1px solid #000;
     }
-    .risk-alert {
-        background-color: #fff5f5;
-        border: 2px solid #c53030;
-        padding: 15px;
-        color: #c53030;
-        font-weight: bold;
-        margin-bottom: 20px;
-        border-radius: 5px;
-        font-family: sans-serif;
-    }
+    
+    /* Tabela w raporcie */
     table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
     td, th { border: 1px solid black !important; padding: 10px; vertical-align: top; font-size: 14px; }
-    th { background-color: #f2f2f2; font-weight: bold; }
-    .header-box {
-        text-align: center; border: 2px solid black; padding: 10px;
-        margin-bottom: 20px; font-weight: bold; text-transform: uppercase; font-size: 18px;
-    }
-    /* Stylizacja pól tekstowych na pełną szerokość */
+    
+    /* Stylizacja dużych ramek - wymuszenie jednakowej wielkości */
     .stTextArea textarea {
         border: 1px solid #cbd5e0 !important;
+        height: 150px !important;
+    }
+    
+    /* Skrócenie szerokości pola ID Pacjenta i Imienia/Nazwiska do ok. 3cm */
+    /* Streamlit stosuje divy owijające, celujemy w nie bezpośrednio */
+    div[data-testid="stTextInput"] {
+        max-width: 150px !important; /* Ok. 3-4 cm zależnie od ekranu */
     }
     </style>
     """, unsafe_allow_html=True)
@@ -65,27 +61,27 @@ with st.sidebar:
 st.title("🩺 System Kliniczny CBT")
 st.markdown("Wypełnij dane pacjenta, aby otrzymać kompletną tabelę pracy klinicznej.")
 
-# JEDNA KOLUMNA - PEŁNA SZEROKOŚĆ
-with st.container():
-    id_p = st.text_input("ID Pacjenta", placeholder="np. 06/2026")
-    terapeuta = st.text_input("Imię i nazwisko terapeuty")
-    
-    st.markdown("---") # Oddzielenie danych podstawowych od wywiadu
-    
-    bio = st.text_area("1. Dane biograficzne", height=150)
-    zasoby = st.text_input("Zasoby pacjenta")
-    problemy = st.text_area("2. Problemy i objawy", height=200)
-    mysli = st.text_area("Kluczowe myśli / Przekonania", height=200)
-    rodzina = st.text_area("Historia rodzinna", height=200)
-    cele = st.text_area("Cele terapii", height=100)
+# Sekcja danych krótkich (skrócone szerokości)
+id_p = st.text_input("ID Pacjenta", placeholder="np. 06")
+terapeuta = st.text_input("Imię i nazwisko terapeuty")
+
+st.markdown("---")
+
+# Sekcja dużych ramek (wszystkie tej samej wielkości, jedna pod drugą)
+bio = st.text_area("1. Dane biograficzne", height=150)
+zasoby = st.text_area("Zasoby pacjenta", height=150)
+problemy = st.text_area("2. Problemy i objawy", height=150)
+mysli = st.text_area("Kluczowe myśli / Przekonania", height=150)
+rodzina = st.text_area("Historia rodzinna", height=150)
+cele = st.text_area("Cele terapii", height=150)
 
 st.divider()
 
-# Pole na dodatkowe życzenia
+# Pole na dodatkowe życzenia (również ta sama wielkość)
 st.subheader("✍️ Uwagi końcowe do wersji ostatecznej")
 custom_notes = st.text_area("Co jeszcze powinniśmy uwzględnić w tym konkretnym raporcie?", 
-                            placeholder="Np. Chcę poradę dotyczącą tego w jaki sposób pracować z arachnofobią.",
-                            height=100)
+                            height=150,
+                            placeholder="Np. Chcę poradę dotyczącą tego w jaki sposób pracować z arachnofobią.")
 
 generate_btn = st.button("🚀 GENERUJ KOMPLETNĄ DOKUMENTACJĘ")
 
@@ -101,23 +97,20 @@ if generate_btn:
             if add_plan: extras += "- DODATEK: Plan 5 sesji.\n"
             if add_relax: extras += "- DODATEK: 3 techniki relaksacyjne.\n"
             if add_distortions: 
-                extras += "- SEKCJA: Zidentyfikuj błędy poznawcze w myślach pacjenta i dodaj TABELĘ EDUKACYJNĄ 'Jak pracować z tymi błędami' (pytania sokratejskie, techniki).\n"
+                extras += "- SEKCJA: Zidentyfikuj błędy poznawcze w myślach i dodaj TABELĘ EDUKACYJNĄ 'Jak pracować z tymi błędami'.\n"
 
             prompt = f"""Jesteś certyfikowanym superwizorem i terapeutą CBT. Przygotuj profesjonalną dokumentację.
             
             STRUKTURA DOKUMENTU:
-            1. ALERT RYZYKA (na samym początku, tylko jeśli są sygnały zagrożenia).
-            2. TABELA PRACY KLINICZNEJ (14 punktów: Dane bio, Zasoby, Problemy, Aktywacja, Błędna interpretacja, Zagrożenie, Zabezpieczenia, Skupienie uwagi, Czynniki podtrzymujące, Przeszłość, Przekonania, Cele, Techniki, Trudności, Wynik).
-            3. MODUŁ SUPERWIZYJNY (Czego się wystrzegać, język, narzędzia).
+            1. ALERT RYZYKA (tylko przy zagrożeniu).
+            2. TABELA PRACY KLINICZNEJ (14 punktów wg wzoru: Dane bio, Zasoby, Problemy, Aktywacja, Błędna interpretacja, Zagrożenie, Zabezpieczenia, Skupienie uwagi, Czynniki podtrzymujące, Przeszłość, Przekonania, Cele, Techniki, Trudności, Wynik).
+            3. MODUŁ SUPERWIZYJNY.
             4. {extras}
             
-            UWAGI SPECJALNE OD TERAPEUTY DO UWZGLĘDNIENIA: {custom_notes}
+            UWAGI SPECJALNE: {custom_notes}
+            FORMATOWANIE: Wyłącznie tabele HTML <table>.
             
-            WYMAGANIA TECHNICZNE:
-            - Wyłącznie czysty kod HTML (tabele <table>).
-            - Styl surowy, kliniczny, bez wstępów.
-            
-            DANE PACJENTA: ID: {id_p}, Bio: {bio}, Problemy: {problemy}, Myśli: {mysli}, Zasoby {zasoby}, Rodzina: {rodzina}, Cele: {cele}."""
+            DANE PACJENTA: ID: {id_p}, Bio: {bio}, Zasoby: {zasoby}, Problemy: {problemy}, Myśli: {mysli}, Rodzina: {rodzina}, Cele: {cele}."""
 
             with st.spinner('Analizowanie przypadku klinicznego...'):
                 response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
