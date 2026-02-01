@@ -112,7 +112,7 @@ def extract_html(text):
 TOOLTIPS = {
     "diagnoza": "Wpisz kod ICD-10 lub DSM-5 (np. F32.1).",
     "ryzyko": "Opisz charakter myśli, plany i zabezpieczenia. AI wygeneruje alert.",
-    "problemy": "Hipotezy kliniczne to robocze, weryfikowalne założenia terapeuty, które wyjaśniają, co wyzwala i podtrzymuje trudności pacjenta. Nie są faktami ani diagnozą – służą kierowaniu interwencjami i są modyfikowane w toku terapii.",
+    "problemy": "Objawy i problemy to opis zgłaszanych i obserwowanych trudności pacjenta (emocjonalnych, poznawczych, behawioralnych i somatycznych) wraz z ich nasileniem i kontekstem. Dane te musi dostarczyć klinicysta; AI może je jedynie porządkować, grupować i łączyć w spójny model CBT.",
     "mysli": "Myśli automatyczne (cytaty) to dosłowne sformułowania pacjenta, które pojawiają się w konkretnych sytuacjach i bezpośrednio wpływają na emocje oraz zachowanie. Muszą pochodzić od pacjenta (lub być wiernym zapisem jego wypowiedzi) – AI może je jedynie porządkować, grupować i mapować na procesy CBT, ale nie tworzyć.",
     "p_sit": "Kontekst zdarzenia: Kto? Gdzie? Kiedy?",
     "p_mysl": "Co dokładnie przemknęło przez głowę?",
@@ -209,4 +209,5 @@ elif st.session_state.step == 5:
 
     if 'final_report' in st.session_state:
         st.markdown(f"<div class='report-card'>{st.session_state.final_report}</div>", unsafe_allow_html=True)
+
 
