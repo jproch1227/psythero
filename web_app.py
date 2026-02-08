@@ -6,8 +6,8 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- INICJALIZACJA STANU (Zapobiega błędom i czyszczeniu pól) ---
-# To jest kluczowe: tworzymy puste zmienne tylko RAZ przy starcie
+# --- INICJALIZACJA STANU (Twój bezpieczny magazyn danych) ---
+# Te zmienne nigdy nie zginą, nawet jak zmienisz krok
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
         'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'hipotezy', 'final_report']
 
@@ -100,7 +100,7 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-# --- LOGIKA KROKÓW (POPRAWIONA) ---
+# --- LOGIKA KROKÓW (Z NAPRAWIONYM ZAPISYWANIEM) ---
 
 # KROK 1
 if st.session_state.step == 1:
@@ -109,18 +109,18 @@ if st.session_state.step == 1:
     col1, col2 = st.columns(2)
     with col1:
         render_label("ID Pacjenta", "Unikalny numer.")
-        # WAŻNE: Używamy tylko parametru 'key'. Streamlit sam zadba o zapisanie wartości.
-        st.text_input("lbl", key="id_p", label_visibility="collapsed")
+        # FIX: Wartość widgetu (key="widget_...") jest natychmiast przypisywana do trwałej zmiennej (st.session_state.id_p)
+        st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
         
         render_label("Diagnoza", INFO["diag"])
-        st.text_input("lbl", key="diagnoza", label_visibility="collapsed")
+        st.session_state.diagnoza = st.text_input("lbl", value=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed")
         
     with col2:
         render_label("Terapeuta", "Imię i nazwisko.")
-        st.text_input("lbl", key="terapeuta", label_visibility="collapsed")
+        st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
     
     render_label("Ryzyko / Bezpieczeństwo", INFO["ryz"])
-    st.text_area("lbl", key="ryzyko", label_visibility="collapsed")
+    st.session_state.ryzyko = st.text_area("lbl", value=st.session_state.ryzyko, key="widget_ryzyko", label_visibility="collapsed")
     
     if st.button("Dalej ➡️"): st.session_state.step = 2; st.rerun()
 
@@ -129,10 +129,10 @@ elif st.session_state.step == 2:
     st.markdown("### 🟣 Krok 2: Objawy")
     
     render_label("Objawy i problemy", INFO["prob"])
-    st.text_area("lbl", key="problemy", label_visibility="collapsed")
+    st.session_state.problemy = st.text_area("lbl", value=st.session_state.problemy, key="widget_problemy", label_visibility="collapsed")
     
     render_label("Myśli automatyczne", INFO["mysl"])
-    st.text_area("lbl", key="mysli_raw", label_visibility="collapsed")
+    st.session_state.mysli_raw = st.text_area("lbl", value=st.session_state.mysli_raw, key="widget_mysli", label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
     if c1.button("⬅️ Wstecz"): st.session_state.step = 1; st.rerun()
@@ -142,20 +142,22 @@ elif st.session_state.step == 2:
 elif st.session_state.step == 3:
     st.markdown("### 🟣 Krok 3: Pętla CBT")
     
+    
+
     render_label("Sytuacja", INFO["syt"])
-    st.text_area("lbl", key="p_sit", label_visibility="collapsed")
+    st.session_state.p_sit = st.text_area("lbl", value=st.session_state.p_sit, key="widget_sit", label_visibility="collapsed")
     
     render_label("Myśl Automatyczna", INFO["auto"])
-    st.text_area("lbl", key="p_mysl", label_visibility="collapsed")
+    st.session_state.p_mysl = st.text_area("lbl", value=st.session_state.p_mysl, key="widget_pmysl", label_visibility="collapsed")
     
     render_label("Emocja", INFO["emo"])
-    st.text_area("lbl", key="p_emocja", label_visibility="collapsed")
+    st.session_state.p_emocja = st.text_area("lbl", value=st.session_state.p_emocja, key="widget_emo", label_visibility="collapsed")
     
     render_label("Zachowanie", INFO["zach"])
-    st.text_area("lbl", key="p_zach", label_visibility="collapsed")
+    st.session_state.p_zach = st.text_area("lbl", value=st.session_state.p_zach, key="widget_zach", label_visibility="collapsed")
     
     render_label("Konsekwencja", INFO["koszt"])
-    st.text_area("lbl", key="p_koszt", label_visibility="collapsed")
+    st.session_state.p_koszt = st.text_area("lbl", value=st.session_state.p_koszt, key="widget_koszt", label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
     if c1.button("⬅️ Wstecz"): st.session_state.step = 2; st.rerun()
@@ -166,13 +168,13 @@ elif st.session_state.step == 4:
     st.markdown("### 🔵 Krok 4: Kontekst")
     
     render_label("Relacja Terapeutyczna", "Opis współpracy.")
-    st.text_area("lbl", key="relacja", label_visibility="collapsed")
+    st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
     
     render_label("Historia / Rodzina", "Tło historyczne.")
-    st.text_area("lbl", key="historia", label_visibility="collapsed")
+    st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
     
     render_label("Hipotezy kliniczne", INFO["hipo"])
-    st.text_area("lbl", key="hipotezy", label_visibility="collapsed")
+    st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
     if c1.button("⬅️ Wstecz"): st.session_state.step = 3; st.rerun()
@@ -216,7 +218,7 @@ elif st.session_state.step == 5:
         st.write("---")
         st.markdown("### 📄 Podgląd dokumentu:")
         
-        # Style tylko dla podglądu (żeby pasował do ciemnego motywu)
+        # Style podglądu (Dark Mode)
         dark_preview_css = """
         <style>
             body { background-color: #1e293b; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
@@ -228,10 +230,10 @@ elif st.session_state.step == 5:
         </style>
         """
         
-        # Wyświetlamy podgląd
+        # Renderowanie podglądu
         components.html(dark_preview_css + st.session_state.final_report, height=800, scrolling=True)
         
-        # --- DO POBRANIA (BIAŁY, DO DRUKU) ---
+        # Do pobrania (Wersja jasna - do druku)
         clean_print_css = """
         <style>
             body { font-family: 'Times New Roman', serif; padding: 40px; color: black; line-height: 1.6; }
