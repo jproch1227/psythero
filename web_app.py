@@ -194,7 +194,6 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.markdown("### 🔵 Krok 4: Kontekst i Zasoby")
     
-    # UKŁAD WERTYKALNY
     render_label("Relacja Terapeutyczna", "Opis współpracy.")
     st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
     
@@ -225,18 +224,18 @@ elif st.session_state.step == 5:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                # --- PROMPT V3.0: ZAAWANSOWANA LOGIKA KLINICZNA ---
+                # --- PROMPT V4.0 (FINAL PROFESSIONAL) ---
                 prompt_clinical = f"""
                 Jesteś ekspertem-superwizorem CBT. Wygeneruj profesjonalną konceptualizację w CZYSTYM HTML.
                 
-                DYREKTYWY BEZPIECZEŃSTWA I SPÓJNOŚCI (WAŻNE):
-                1. HIPOTEZY: Każda hipoteza rozwojowa musi mieć oznaczony poziom pewności (np. "Hipoteza (Pewność: Średnia)").
-                2. ZASOBY: Nigdy nie pisz "Brak zasobów". Używaj określeń: "Zasoby sytuacyjnie niedostępne", "Niestabilne", "Ograniczone".
-                3. JĘZYK CBT: W Planie Interwencji używaj terminologii CBT. Zamiast "Terapii Schematów" pisz "Praca z Przekonaniami Kluczowymi" lub "Restrukturyzacja Poznawcza".
-                4. CELE SMART: Muszą być BEHAWIORALNE (co pacjent zrobi/zmieni w zachowaniu), a nie tylko emocjonalne (mniej lęku).
+                DYREKTYWY KLINICZNE:
+                1. HIPOTEZY: Oznaczaj poziom pewności (Niska/Średnia/Wysoka).
+                2. RYZYKA PROCESOWE: Nie tylko samobójstwo. Uwzględnij ryzyka dla współpracy (np. ADHD -> zapominanie, Lęk -> unikanie sesji).
+                3. CELE: Behawioralne i mierzalne.
+                4. ZASOBY: Nigdy nie pisz "Brak". Pisz "Niedostępne", "Zablokowane".
                 
                 DANE:
-                ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko: {st.session_state.ryzyko}
+                ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko S: {st.session_state.ryzyko}
                 Historia: {st.session_state.historia}, Problemy: {st.session_state.problemy}
                 Zasoby (input): {st.session_state.zasoby}
                 Hipotezy Terapeuty: {st.session_state.hipotezy}
@@ -244,35 +243,43 @@ elif st.session_state.step == 5:
                 
                 WYMAGANA STRUKTURA RAPORTU (HTML):
                 
-                <h2>1. Fakty vs. Hipotezy</h2>
-                (Tabela 2 kolumny: 'Fakty Kliniczne' [obserwowalne] vs 'Hipotezy Kliniczne do Weryfikacji' [interpretacje z poziomem pewności])
+                <h2>1. Priorytet Terapeutyczny (Fokus na teraz)</h2>
+                (Maksymalnie 2 zdania. Zdefiniuj główny cel pracy na najbliższy czas, np. 'Ograniczenie unikania, by umożliwić korektę przekonań'.)
                 
-                <h2>2. Główne Mechanizmy Podtrzymujące (CBT)</h2>
-                (Wypunktuj konkretne błędne koła, np. Unikanie -> Ulga -> Wzrost lęku.)
+                <h2>2. Psychoedukacja: "Jak to tłumaczymy pacjentowi?"</h2>
+                (Jedno, proste zdanie w cudzysłowie. Metafora lub wyjaśnienie mechanizmu, które terapeuta może powiedzieć na głos.)
                 
-                <h2>3. Interakcja Diagnostyczna</h2>
-                (Jeśli zaznaczono wiele diagnoz, np. ADHD i Lęk, opisz krótko ich wzajemny wpływ. Jeśli jedna diagnoza, pomiń.)
+                <h2>3. Fakty vs. Hipotezy</h2>
+                (Tabela 2 kolumny: 'Fakty Kliniczne' vs 'Hipotezy do Weryfikacji' [z oznaczonym poziomem pewności])
                 
-                <h2>4. Konceptualizacja 5P</h2>
-                (Tabela HTML. W sekcji 'Czynniki Chroniące' uwzględnij zasoby, nawet jeśli są ukryte.)
+                <h2>4. Główne Mechanizmy Podtrzymujące (CBT)</h2>
+                (Lista punktowana mechanizmów blokujących zmianę.)
                 
-                <h2>5. Zasoby Wspierające Terapię</h2>
-                (Wypunktuj: Społeczne [realistycznie opisane] oraz Poznawcze [wgląd, motywacja, inteligencja].)
+                <h2>5. Interakcja Diagnostyczna</h2>
+                (Opisz, jak diagnozy na siebie wpływają, np. ADHD vs Lęk.)
                 
-                <h2>6. Analiza Funkcjonalna (Pętla Becka)</h2>
-                (Tabela 5 kolumn.)
+                <h2>6. Konceptualizacja 5P</h2>
+                (Tabela. W 'Czynnikach Chroniących' uwzględnij zasoby.)
                 
-                <h2>7. Mapa Interwencji (Plan Terapii)</h2>
-                (Tabela: 'Mechanizm/Problem' -> 'Technika CBT'. Np. Niskie poczucie własnej wartości -> Praca nad przekonaniami kluczowymi / Budowanie nowej narracji o sobie.)
+                <h2>7. Zasoby Wspierające Terapię</h2>
+                (Wypunktuj Społeczne i Poznawcze.)
                 
-                <h2>8. Wskaźniki Trafności (Feedback Loop)</h2>
-                (Po czym poznamy, że konceptualizacja jest trafna? 3 mierzalne zmiany w zachowaniu.)
+                <h2>8. Analiza Funkcjonalna (Pętla Becka)</h2>
+                (Tabela HTML.)
                 
-                <h2>9. Cele SMART i Plan Bezpieczeństwa</h2>
-                (Cele behawioralne: Zwiększenie inicjatywy vs Zmniejszenie lęku.)
+                <h2>9. Ryzyka dla Procesu Terapii</h2>
+                (Wypunktuj, co może sabotować terapię: np. 'Tendencja do ruminacji po zadaniach', 'Trudność w systematyczności przez ADHD', 'Ryzyko unikania ekspozycji'.)
+                
+                <h2>10. Mapa Interwencji (Plan Terapii)</h2>
+                (Tabela: 'Mechanizm' -> 'Technika CBT'.)
+                
+                <h2>11. Wskaźniki Trafności Konceptualizacji</h2>
+                (Po czym poznamy, że rozumienie pacjenta jest trafne?)
+                
+                <h2>12. Cele SMART i Plan Bezpieczeństwa</h2>
                 """
                 
-                with st.spinner('Analiza mechanizmów i weryfikacja hipotez...'):
+                with st.spinner('Synteza kliniczna i generowanie konceptualizacji...'):
                     config = types.GenerateContentConfig(temperature=0.0) 
                     response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_clinical, config=config)
                     st.session_state.final_report = extract_pure_html(response.text)
@@ -319,7 +326,7 @@ elif st.session_state.step == 5:
                 <h2>2. Co się dzisiaj działo?</h2>
                 (Psychoedukacja).
                 <h2>3. Eksperyment Behawioralny</h2>
-                (Zaproponuj małe działanie/test rzeczywistości, a nie tylko 'myślenie pozytywne').
+                (Zaproponuj małe działanie/test rzeczywistości).
                 """
                 
                 with st.spinner('Przygotowywanie materiałów...'):
