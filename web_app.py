@@ -6,123 +6,53 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- INICJALIZACJA STANU ---
+# --- INICJALIZACJA STANU (Zapobiega błędom i czyszczeniu pól) ---
+# To jest kluczowe: tworzymy puste zmienne tylko RAZ przy starcie
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
         'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'hipotezy', 'final_report']
+
 for key in keys:
     if key not in st.session_state:
         st.session_state[key] = ""
+
 if 'step' not in st.session_state:
     st.session_state.step = 1
 
-# --- DESIGN SYSTEM (CSS - NOWOCZESNY DARK MODE) ---
+# --- CSS (Design System) ---
 st.markdown("""
     <style>
-    /* 1. GŁÓWNE TŁO APLIKACJI */
-    .stApp {
-        background-color: #0f1116; /* Bardzo ciemny granat/czern */
-        color: #e2e8f0;
-    }
+    .stApp { background-color: #0f1116; color: #e2e8f0; }
+    section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); border-right: 1px solid #334155; }
+    div[data-testid="stWidgetLabel"] { display: none; } /* Ukrywa systemowe etykiety */
 
-    /* 2. PANEL BOCZNY (SIDEBAR) - GRADIENT */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
-        border-right: 1px solid #334155;
-    }
-    
-    /* 3. UKRYWANIE SYSTEMOWYCH ETYKIET */
-    div[data-testid="stWidgetLabel"] { display: none; }
-
-    /* 4. POLA TEKSTOWE (INPUTS) */
+    /* Pola tekstowe */
     .stTextInput input, .stTextArea textarea {
-        background-color: #1e293b !important; /* Ciemnoszare tło */
-        color: #f8fafc !important; /* Biały tekst */
-        border: 1px solid #334155 !important;
-        border-radius: 8px !important;
+        background-color: #1e293b !important; color: #f8fafc !important;
+        border: 1px solid #334155 !important; border-radius: 8px !important;
     }
-    .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: #6366f1 !important; /* Fioletowe podświetlenie */
-        box-shadow: 0 0 0 1px #6366f1 !important;
-    }
+    .stTextInput input:focus, .stTextArea textarea:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important; }
     
-    /* 5. PRZYCISKI (BUTTONS) - GRADIENT I GLOW */
+    /* Przyciski */
     .stButton > button {
-        background: linear-gradient(90deg, #4f46e5, #7c3aed); /* Fioletowo-niebieski gradient */
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 24px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        background: linear-gradient(90deg, #4f46e5, #7c3aed); color: white; border: none;
+        border-radius: 8px; padding: 10px 24px; font-weight: 600;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    .stButton > button:hover {
-        opacity: 0.9;
-        box-shadow: 0 0 15px rgba(124, 58, 237, 0.5); /* Świecenie po najechaniu */
-        transform: translateY(-1px);
-    }
-    /* Przycisk Wstecz - inny styl (bardziej stonowany) */
-    div.row-widget.stButton > button[kind="secondary"] {
-        background: transparent;
-        border: 1px solid #475569;
-    }
-
-    /* 6. PASEK POSTĘPU */
-    .stProgress > div > div > div > div {
-        background: linear-gradient(90deg, #ef4444, #a855f7); /* Czerwono-fioletowy jak na screenie */
-    }
-
-    /* 7. WŁASNE ETYKIETY Z IKONKAMI */
-    .custom-label {
-        margin-top: 15px;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        font-family: 'Inter', sans-serif;
-    }
-    .label-text {
-        font-size: 14px;
-        font-weight: 500;
-        color: #94a3b8; /* Jasnoszary tekst etykiet */
-        margin-right: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
+    .stButton > button:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(124, 58, 237, 0.5); }
+    
+    /* Etykiety */
+    .custom-label { margin-top: 15px; margin-bottom: 8px; display: flex; align-items: center; }
+    .label-text { font-size: 14px; font-weight: 500; color: #94a3b8; margin-right: 8px; text-transform: uppercase; }
     .info-icon {
-        background-color: #3b82f6;
-        color: white;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: bold;
-        cursor: help;
-        position: relative;
+        background-color: #3b82f6; color: white; border-radius: 50%; width: 16px; height: 16px;
+        display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; cursor: help;
     }
     .info-icon:hover::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        left: 24px;
-        bottom: -5px;
-        background: #0f172a;
-        color: #e2e8f0;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        width: 250px;
-        z-index: 1000;
-        border: 1px solid #334155;
-        line-height: 1.4;
+        content: attr(data-tooltip); position: absolute; left: 24px; bottom: -5px;
+        background: #0f172a; color: #e2e8f0; padding: 8px 12px; border-radius: 6px;
+        font-size: 12px; width: 250px; z-index: 1000; border: 1px solid #334155;
     }
-    
-    /* 8. NAGŁÓWKI */
-    h1, h2, h3 {
-        color: #f8fafc !important;
-        font-family: 'Inter', sans-serif;
-    }
+    h1, h2, h3 { color: #f8fafc !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -162,17 +92,15 @@ INFO = {
 with st.sidebar:
     st.markdown("### 🛡️ Panel Sterowania")
     api_key = st.text_input("Klucz Gemini API", type="password")
-    
-    st.write("") # Odstęp
+    st.write("")
     st.markdown(f"**Postęp:** Krok {st.session_state.step} z 5")
     st.progress(st.session_state.step / 5)
-    
-    st.write("") # Odstęp
+    st.write("")
     if st.button("🗑️ Resetuj sesję"):
         st.session_state.clear()
         st.rerun()
 
-# --- LOGIKA KROKÓW ---
+# --- LOGIKA KROKÓW (POPRAWIONA) ---
 
 # KROK 1
 if st.session_state.step == 1:
@@ -181,6 +109,7 @@ if st.session_state.step == 1:
     col1, col2 = st.columns(2)
     with col1:
         render_label("ID Pacjenta", "Unikalny numer.")
+        # WAŻNE: Używamy tylko parametru 'key'. Streamlit sam zadba o zapisanie wartości.
         st.text_input("lbl", key="id_p", label_visibility="collapsed")
         
         render_label("Diagnoza", INFO["diag"])
@@ -282,12 +211,12 @@ elif st.session_state.step == 5:
                     
             except Exception as e: st.error(f"Błąd: {e}")
 
-    # --- PODGLĄD DOKUMENTU W STYLU "DARK MODE" ---
+    # --- PODGLĄD DOKUMENTU ---
     if st.session_state.final_report:
         st.write("---")
         st.markdown("### 📄 Podgląd dokumentu:")
         
-        # Stylizacja HTML dla podglądu (żeby pasował do ciemnego motywu aplikacji)
+        # Style tylko dla podglądu (żeby pasował do ciemnego motywu)
         dark_preview_css = """
         <style>
             body { background-color: #1e293b; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
@@ -299,13 +228,10 @@ elif st.session_state.step == 5:
         </style>
         """
         
-        # Łączymy style ciemne z treścią raportu TYLKO dla podglądu
-        preview_html = f"{dark_preview_css}{st.session_state.final_report}"
-        
         # Wyświetlamy podgląd
-        components.html(preview_html, height=800, scrolling=True)
+        components.html(dark_preview_css + st.session_state.final_report, height=800, scrolling=True)
         
-        # --- DO POBRANIA: CZYSTY BIAŁY RAPORT (DO DRUKU) ---
+        # --- DO POBRANIA (BIAŁY, DO DRUKU) ---
         clean_print_css = """
         <style>
             body { font-family: 'Times New Roman', serif; padding: 40px; color: black; line-height: 1.6; }
