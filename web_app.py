@@ -109,7 +109,7 @@ def extract_pure_html(text):
 
 # --- SŁOWNIK POMOCY ---
 INFO = {
-    "diag": "Możesz wybrać wiele diagnoz.",
+    "diag": "Możesz wybrać wiele diagnoz (współwystępowanie).",
     "ryz": "Myśli S., plany, dostępność środków.",
     "prob": "Główne objawy i problemy.",
     "mysl": "Cytaty myśli automatycznych.",
@@ -119,7 +119,7 @@ INFO = {
     "zach": "Co zrobił / Czego uniknął?",
     "koszt": "Skutek: Krótka ulga vs Długi koszt.",
     "hipo": "Mechanizmy podtrzymujące.",
-    "zasoby": "Mocne strony, wsparcie społeczne, hobby, inteligencja, motywacja."
+    "zasoby": "WAŻNE: Nie tylko wsparcie zewnętrzne, ale też ZASOBY POZNAWCZE (wgląd, intelekt, wytrwałość, gotowość do pracy)."
 }
 
 # --- PANEL BOCZNY ---
@@ -194,18 +194,17 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.markdown("### 🔵 Krok 4: Kontekst i Zasoby")
     
-    # --- UKŁAD WERTYKALNY (JEDEN POD DRUGIM) ---
-    
+    # UKŁAD WERTYKALNY
     render_label("Relacja Terapeutyczna", "Opis współpracy.")
     st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
     
     render_label("Historia / Rodzina", "Tło historyczne.")
     st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
     
-    render_label("Zasoby i Mocne Strony", INFO["zasoby"])
+    render_label("Zasoby i Mocne Strony (Poznawcze i Społeczne)", INFO["zasoby"])
     st.session_state.zasoby = st.text_area("lbl", value=st.session_state.zasoby, key="widget_zasoby", label_visibility="collapsed")
     
-    render_label("Hipotezy kliniczne", INFO["hipo"])
+    render_label("Twoje Hipotezy (Opcjonalne)", INFO["hipo"])
     st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
@@ -214,7 +213,7 @@ elif st.session_state.step == 4:
 
 # KROK 5
 elif st.session_state.step == 5:
-    st.markdown("### 🚀 Krok 5: Generowanie")
+    st.markdown("### 🚀 Krok 5: Generowanie Konceptualizacji")
     
     diagnoza_str = ", ".join(st.session_state.diagnoza) if isinstance(st.session_state.diagnoza, list) else st.session_state.diagnoza
     
@@ -225,82 +224,106 @@ elif st.session_state.step == 5:
         else:
             try:
                 client = genai.Client(api_key=api_key)
-                prompt_clinical = f"""
-                Jesteś superwizorem CBT. Wygeneruj raport w CZYSTYM HTML. Bez markdown. Bez instrukcji.
                 
-                DANE:
+                # --- ZAAWANSOWANY PROMPT SPEŁNIAJĄCY NOWE WYMAGANIA ---
+                prompt_clinical = f"""
+                Jesteś ekspertem-superwizorem CBT. Wygeneruj zaawansowaną konceptualizację przypadku w CZYSTYM HTML.
+                Używaj profesjonalnego języka klinicznego.
+                
+                DANE PACJENTA:
                 ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko: {st.session_state.ryzyko}
                 Historia: {st.session_state.historia}, Problemy: {st.session_state.problemy}
-                ZASOBY I MOCNE STRONY: {st.session_state.zasoby}
-                
+                Zasoby (input): {st.session_state.zasoby}
+                Hipotezy Terapeuty: {st.session_state.hipotezy}
                 PĘTLA: Syt: {st.session_state.p_sit}, Myśl: {st.session_state.p_mysl}, Emo: {st.session_state.p_emocja}, Zach: {st.session_state.p_zach}, Koszt: {st.session_state.p_koszt}
                 
-                STRUKTURA HTML:
-                <h2>1. Dane Kliniczne</h2>
-                <h2>2. Konceptualizacja 5P (Tabela HTML)</h2>
-                (Pamiętaj: w sekcji 'Czynniki Chroniące' wykorzystaj podane Zasoby pacjenta)
-                <h2>3. Analiza Funkcjonalna (Tabela Pętli Becka)</h2>
-                <h2>4. Triada i Zniekształcenia</h2>
-                <h2>5. Tabela Padesky'ego (Restrukturyzacja)</h2>
-                <h2>6. Plan Bezpieczeństwa</h2>
-                <h2>7. Cele SMART</h2>
+                WYMAGANA STRUKTURA RAPORTU (HTML):
+                
+                <h2>1. Fakty vs. Hipotezy</h2>
+                (Stwórz tabelę z dwiema kolumnami. 
+                Kolumna 1: 'Fakty Kliniczne' - tylko to, co pacjent zgłosił i co jest obserwowalne. 
+                Kolumna 2: 'Hipotezy Kliniczne do Weryfikacji' - Twoje interpretacje, np. funkcje zachowań, schematy, co wymaga sprawdzenia.)
+                
+                <h2>2. Główne Mechanizmy Podtrzymujące (CBT)</h2>
+                (Wypunktuj konkretne mechanizmy CBT, które blokują zmianę. Np. 'Unikanie sytuacyjne', 'Ruminacje poekspozycyjne', 'Brak korekty przekonań'. Nazwij je fachowo.)
+                
+                <h2>3. Interakcja Diagnostyczna</h2>
+                (Jeśli występują współwystępujące diagnozy, np. ADHD i Lęk, opisz w 3-4 zdaniach jak na siebie wpływają. Np. 'Deficyty uwagi zwiększają ryzyko porażki społecznej, co nasila lęk'.)
+                
+                <h2>4. Konceptualizacja 5P (Case Formulation)</h2>
+                (Tabela HTML: Problem Aktualny, Czynniki Predysponujące, Wyzwalające, Podtrzymujące, Chroniące.)
+                
+                <h2>5. Zasoby Wspierające Terapię</h2>
+                (Wypunktuj zasoby dzieląc je na:
+                - Społeczne/Zewnętrzne
+                - Poznawcze/Osobiste (np. wgląd, gotowość do eksperymentów, inteligencja - wywnioskuj je z opisu))
+                
+                <h2>6. Analiza Funkcjonalna (Tu i Teraz)</h2>
+                (Tabela Pętli Becka: Sytuacja, Myśl, Emocja, Zachowanie, Konsekwencje)
+                
+                <h2>7. Mapa Interwencji (Plan Terapii)</h2>
+                (Tabela łącząca problem z techniką. Kolumny: 'Mechanizm/Problem' -> 'Proponowana Interwencja CBT'.
+                Np. Unikanie -> Drabina ekspozycji; Ruminacje -> Trening uważności.)
+                
+                <h2>8. Wskaźniki Trafności Konceptualizacji</h2>
+                (Odpowiedz na pytanie: 'Po czym poznamy, że nasza konceptualizacja jest trafna?'. Wypunktuj 3 konkretne, mierzalne zmiany u pacjenta, które potwierdzą hipotezy.)
+                
+                <h2>9. Cele SMART i Plan Bezpieczeństwa</h2>
+                (Krótko cele i tabela bezpieczeństwa jeśli dotyczy).
                 """
                 
-                with st.spinner('Tworzenie dokumentacji medycznej...'):
-                    config = types.GenerateContentConfig(temperature=0.0)
+                with st.spinner('Analiza mechanizmów podtrzymujących i generowanie konceptualizacji...'):
+                    config = types.GenerateContentConfig(temperature=0.0) # Precyzja > Kreatywność
                     response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_clinical, config=config)
                     st.session_state.final_report = extract_pure_html(response.text)
             except Exception as e: st.error(f"Błąd: {e}")
 
     if st.session_state.final_report:
-        with st.expander("📄 Podgląd Raportu Klinicznego", expanded=True):
+        with st.expander("📄 Podgląd Konceptualizacji Klinicznej", expanded=True):
             dark_css = """<style>
                 body { background-color: #1e293b; color: #e2e8f0; font-family: sans-serif; padding: 20px; }
-                h1, h2, h3 { color: #ffffff !important; border-bottom: 1px solid #475569; margin-top: 30px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #f8fafc; }
-                th, td { border: 1px solid #cbd5e1; padding: 12px; color: #0f172a !important; }
-                th { background-color: #e2e8f0; font-weight: bold; text-transform: uppercase; }
+                h1, h2, h3 { color: #ffffff !important; border-bottom: 1px solid #475569; margin-top: 30px; padding-bottom: 5px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #f8fafc; border-radius: 4px; overflow: hidden; }
+                th, td { border: 1px solid #cbd5e1; padding: 12px; color: #0f172a !important; vertical-align: top; }
+                th { background-color: #e2e8f0; font-weight: bold; text-transform: uppercase; font-size: 13px; }
+                li { margin-bottom: 5px; }
             </style>"""
-            components.html(dark_css + st.session_state.final_report, height=600, scrolling=True)
+            components.html(dark_css + st.session_state.final_report, height=800, scrolling=True)
             
-            print_css = """<style>body{font-family:'Times New Roman',serif;padding:40px;color:black}table{width:100%;border-collapse:collapse}th,td{border:1px solid black;padding:8px}th{background:#f0f0f0}</style>"""
-            st.download_button("💾 Pobierz Raport Kliniczny (HTML)", f"<html><head>{print_css}</head><body>{st.session_state.final_report}</body></html>", file_name=f"raport_{st.session_state.id_p}.html")
+            print_css = """<style>body{font-family:'Times New Roman',serif;padding:40px;color:black;max-width:900px;margin:auto}h2{border-bottom:2px solid #333;margin-top:30px}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid black;padding:10px}th{background:#f0f0f0}</style>"""
+            st.download_button("💾 Pobierz Raport (HTML)", f"<html><head>{print_css}</head><body>{st.session_state.final_report}</body></html>", file_name=f"konceptualizacja_{st.session_state.id_p}.html")
 
     st.markdown("---")
     
-    st.subheader("2. Materiały dla Pacjenta (Zadanie Domowe)")
+    st.subheader("2. Materiały dla Pacjenta")
     
     if st.button("GENERUJ KARTĘ PRACY DLA PACJENTA", key="btn_patient"):
         if not api_key: st.error("Podaj klucz API!")
-        elif not st.session_state.final_report: st.warning("Najpierw wygeneruj raport kliniczny, aby AI miało kontekst!")
+        elif not st.session_state.final_report: st.warning("Najpierw wygeneruj raport kliniczny!")
         else:
             try:
                 client = genai.Client(api_key=api_key)
                 prompt_patient = f"""
-                Jesteś empatycznym terapeutą CBT. Stwórz "Kartę Pracy" dla pacjenta w formacie CZYSTEGO HTML.
-                Używaj języka prostego, motywującego.
+                Jesteś empatycznym terapeutą CBT. Stwórz "Kartę Pracy" dla pacjenta w HTML.
                 
                 DANE:
                 Diagnoza: {diagnoza_str}
                 Zasoby: {st.session_state.zasoby}
-                Myśl automatyczna: {st.session_state.p_mysl}
+                Myśl: {st.session_state.p_mysl}
                 
                 STRUKTURA:
                 <div class="header" style="text-align:center; padding:20px; background:#e0f2fe; border-radius:10px;">
                     <h1 style="color:#0369a1; margin:0;">Moja Karta Pracy CBT</h1>
                 </div>
-                
-                <h2>1. Twoje Mocne Strony (Przypominajka)</h2>
-                (Odwołaj się do zasobów: {st.session_state.zasoby}, aby wzmocnić poczucie własnej wartości pacjenta.)
-                
-                <h2>2. Co się dzisiaj działo? (Psychoedukacja)</h2>
-                (Wyjaśnij mechanizm myśli i emocji.)
-                
+                <h2>1. Twoje Mocne Strony</h2>
+                (Odwołaj się do zasobów pacjenta).
+                <h2>2. Co się dzisiaj działo?</h2>
+                (Psychoedukacja o myślach i emocjach).
                 <h2>3. Eksperyment na ten tydzień</h2>
-                (Zadanie behawioralne.)
+                (Zadanie behawioralne).
                 """
                 
-                with st.spinner('Przygotowywanie materiałów edukacyjnych...'):
+                with st.spinner('Przygotowywanie materiałów...'):
                     config = types.GenerateContentConfig(temperature=0.7)
                     response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_patient, config=config)
                     st.session_state.patient_homework = extract_pure_html(response.text)
@@ -311,9 +334,7 @@ elif st.session_state.step == 5:
             patient_css = """<style>
                 body { background-color: #ffffff; color: #334155; font-family: 'Segoe UI', sans-serif; padding: 20px; }
                 h1, h2 { color: #0284c7; border-bottom: 2px solid #e0f2fe; padding-bottom: 10px; margin-top: 20px; }
-                p { font-size: 16px; line-height: 1.6; }
-                .card { border: 2px dashed #94a3b8; padding: 20px; margin: 20px 0; background-color: #f8fafc; text-align: center; font-style: italic; }
+                .card { border: 2px dashed #94a3b8; padding: 20px; margin: 20px 0; background-color: #f8fafc; text-align: center; }
             </style>"""
             components.html(patient_css + st.session_state.patient_homework, height=600, scrolling=True)
-            
-            st.download_button("💾 Pobierz Zadanie Domowe (HTML)", f"<html><head>{patient_css}</head><body>{st.session_state.patient_homework}</body></html>", file_name=f"zadanie_domowe_{st.session_state.id_p}.html")
+            st.download_button("💾 Pobierz Zadanie (HTML)", f"<html><head>{patient_css}</head><body>{st.session_state.patient_homework}</body></html>", file_name=f"zadanie_{st.session_state.id_p}.html")
