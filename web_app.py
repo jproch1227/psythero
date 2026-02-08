@@ -1,11 +1,36 @@
 import streamlit as st
 import streamlit.components.v1 as components
 from google import genai
-from google.genai import types # Import typów do konfiguracji temperatury
+from google.genai import types
 import re
 
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
+
+# --- LISTA DIAGNOZ ICD-10 (Dedykowana dla CBT) ---
+ICD_10_LIST = [
+    "",  # Puste pole na start
+    "F32 - Epizod depresyjny",
+    "F33 - Zaburzenia depresyjne nawracające",
+    "F31 - Zaburzenia afektywne dwubiegunowe",
+    "F41.1 - Zaburzenie lękowe uogólnione (GAD)",
+    "F40.1 - Fobia społeczna (Lęk społeczny)",
+    "F41.0 - Zaburzenie lękowe z napadami lęku (Panika)",
+    "F40.0 - Agorafobia",
+    "F42 - Zaburzenia obsesyjno-kompulsyjne (OCD)",
+    "F43.1 - Zaburzenie stresowe pourazowe (PTSD)",
+    "F43.2 - Zaburzenia adaptacyjne",
+    "F45 - Zaburzenia pod postacią somatyczną",
+    "F50.0 - Jadłowstręt psychiczny (Anoreksja)",
+    "F50.2 - Żarłoczność psychiczna (Bulimia)",
+    "F60.3 - Osobowość chwiejna emocjonalnie (Borderline)",
+    "F60.4 - Osobowość histrioniczna",
+    "F60.5 - Osobowość anankastyczna (Obsesyjno-kompulsyjna)",
+    "F60.6 - Osobowość lękliwa (Unikająca)",
+    "F60.8 - Osobowość narcystyczna",
+    "F90 - Zaburzenia hiperkinetyczne (ADHD)",
+    "Inne / Nieokreślone"
+]
 
 # --- INICJALIZACJA STANU ---
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
@@ -26,12 +51,15 @@ st.markdown("""
     section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); border-right: 1px solid #334155; }
     div[data-testid="stWidgetLabel"] { display: none; }
 
-    /* Pola tekstowe */
-    .stTextInput input, .stTextArea textarea {
+    /* Pola tekstowe i Selectbox */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
         background-color: #1e293b !important; color: #f8fafc !important;
         border: 1px solid #334155 !important; border-radius: 8px !important;
     }
     .stTextInput input:focus, .stTextArea textarea:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important; }
+    
+    /* Naprawa koloru tekstu w liście rozwijanej (Selectbox dropdown) */
+    ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #1e293b !important; color: white !important; }
     
     /* Przyciski */
     .stButton > button {
@@ -78,7 +106,7 @@ def extract_pure_html(text):
 
 # --- SŁOWNIK POMOCY ---
 INFO = {
-    "diag": "Kod ICD-10/DSM-5.",
+    "diag": "Wybierz kod ICD-10 z listy.",
     "ryz": "Myśli S., plany, czynniki chroniące.",
     "prob": "Główne objawy i problemy.",
     "mysl": "Cytaty myśli automatycznych.",
@@ -108,7 +136,7 @@ with st.sidebar:
 if st.session_state.step == 1:
     st.markdown("### 🔵 Krok 1: Dane podstawowe")
     
-    # UKŁAD WERTYKALNY (Jeden pod drugim)
+    # POLA JEDEN POD DRUGIM (UKŁAD WERTYKALNY)
     
     render_label("ID Pacjenta", "Unikalny numer.")
     st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
@@ -116,8 +144,23 @@ if st.session_state.step == 1:
     render_label("Terapeuta", "Imię i nazwisko.")
     st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
     
-    render_label("Diagnoza", INFO["diag"])
-    st.session_state.diagnoza = st.text_input("lbl", value=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed")
+    # --- ZMIANA: DIAGNOZA JAKO LISTA ROZWIJANA (SELECTBOX) ---
+    render_label("Diagnoza (ICD-10)", INFO["diag"])
+    
+    # Obsługa domyślnej wartości dla selectboxa
+    default_ix = 0
+    if st.session_state.diagnoza in ICD_10_LIST:
+        default_ix = ICD_10_LIST.index(st.session_state.diagnoza)
+    
+    selected_diag = st.selectbox(
+        "lbl", 
+        options=ICD_10_LIST, 
+        index=default_ix,
+        key="widget_diag", 
+        label_visibility="collapsed"
+    )
+    # Zapisujemy wybór do stanu
+    st.session_state.diagnoza = selected_diag
     
     render_label("Ryzyko / Bezpieczeństwo", INFO["ryz"])
     st.session_state.ryzyko = st.text_area("lbl", value=st.session_state.ryzyko, key="widget_ryzyko", label_visibility="collapsed")
@@ -222,7 +265,7 @@ elif st.session_state.step == 5:
 
     st.markdown("---")
     
-    # --- SEKCJA 2: MATERIAŁY DLA PACJENTA (NOWOŚĆ) ---
+    # --- SEKCJA 2: MATERIAŁY DLA PACJENTA ---
     st.subheader("2. Materiały dla Pacjenta (Zadanie Domowe)")
     
     if st.button("GENERUJ KARTĘ PRACY DLA PACJENTA", key="btn_patient"):
@@ -262,7 +305,6 @@ elif st.session_state.step == 5:
                     st.session_state.patient_homework = extract_pure_html(response.text)
             except Exception as e: st.error(f"Błąd: {e}")
 
-    # Wyświetlanie Karty Pacjenta
     if st.session_state.patient_homework:
         with st.expander("🎓 Podgląd Karty Pacjenta", expanded=True):
             patient_css = """<style>
