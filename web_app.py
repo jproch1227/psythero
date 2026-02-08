@@ -6,8 +6,7 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- INICJALIZACJA STANU (Twój bezpieczny magazyn danych) ---
-# Te zmienne nigdy nie zginą, nawet jak zmienisz krok
+# --- INICJALIZACJA STANU ---
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
         'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'hipotezy', 'final_report']
 
@@ -18,12 +17,12 @@ for key in keys:
 if 'step' not in st.session_state:
     st.session_state.step = 1
 
-# --- CSS (Design System) ---
+# --- CSS (Design System Aplikacji) ---
 st.markdown("""
     <style>
     .stApp { background-color: #0f1116; color: #e2e8f0; }
     section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); border-right: 1px solid #334155; }
-    div[data-testid="stWidgetLabel"] { display: none; } /* Ukrywa systemowe etykiety */
+    div[data-testid="stWidgetLabel"] { display: none; }
 
     /* Pola tekstowe */
     .stTextInput input, .stTextArea textarea {
@@ -100,21 +99,18 @@ with st.sidebar:
         st.session_state.clear()
         st.rerun()
 
-# --- LOGIKA KROKÓW (Z NAPRAWIONYM ZAPISYWANIEM) ---
+# --- LOGIKA KROKÓW ---
 
 # KROK 1
 if st.session_state.step == 1:
     st.markdown("### 🔵 Krok 1: Dane podstawowe")
-    
     col1, col2 = st.columns(2)
     with col1:
         render_label("ID Pacjenta", "Unikalny numer.")
-        # FIX: Wartość widgetu (key="widget_...") jest natychmiast przypisywana do trwałej zmiennej (st.session_state.id_p)
         st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
         
         render_label("Diagnoza", INFO["diag"])
         st.session_state.diagnoza = st.text_input("lbl", value=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed")
-        
     with col2:
         render_label("Terapeuta", "Imię i nazwisko.")
         st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
@@ -127,10 +123,8 @@ if st.session_state.step == 1:
 # KROK 2
 elif st.session_state.step == 2:
     st.markdown("### 🟣 Krok 2: Objawy")
-    
     render_label("Objawy i problemy", INFO["prob"])
     st.session_state.problemy = st.text_area("lbl", value=st.session_state.problemy, key="widget_problemy", label_visibility="collapsed")
-    
     render_label("Myśli automatyczne", INFO["mysl"])
     st.session_state.mysli_raw = st.text_area("lbl", value=st.session_state.mysli_raw, key="widget_mysli", label_visibility="collapsed")
     
@@ -166,13 +160,10 @@ elif st.session_state.step == 3:
 # KROK 4
 elif st.session_state.step == 4:
     st.markdown("### 🔵 Krok 4: Kontekst")
-    
     render_label("Relacja Terapeutyczna", "Opis współpracy.")
     st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
-    
     render_label("Historia / Rodzina", "Tło historyczne.")
     st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
-    
     render_label("Hipotezy kliniczne", INFO["hipo"])
     st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
     
@@ -191,7 +182,6 @@ elif st.session_state.step == 5:
                 client = genai.Client(api_key=api_key)
                 prompt = f"""
                 Jesteś superwizorem CBT. Wygeneruj raport w CZYSTYM HTML.
-                WAŻNE: Nie dodawaj tekstu przed ani po kodzie HTML.
                 
                 STRUKTURA:
                 <h2>1. Dane Pacjenta</h2>
@@ -218,14 +208,45 @@ elif st.session_state.step == 5:
         st.write("---")
         st.markdown("### 📄 Podgląd dokumentu:")
         
-        # Style podglądu (Dark Mode)
+        # ZMODYFIKOWANY CSS PODGLĄDU ZGODNIE Z PROŚBĄ
         dark_preview_css = """
         <style>
-            body { background-color: #1e293b; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-            h2 { color: #a5b4fc; border-bottom: 1px solid #475569; padding-bottom: 5px; margin-top: 25px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; background-color: #0f172a; }
-            th, td { border: 1px solid #334155; padding: 10px; text-align: left; vertical-align: top; }
-            th { background-color: #1e3a8a; color: white; }
+            body { 
+                background-color: #1e293b; 
+                color: #e2e8f0; 
+                font-family: 'Segoe UI', sans-serif; 
+                padding: 20px; 
+            }
+            
+            /* NAGŁÓWKI NA BIAŁO */
+            h1, h2, h3, h4 { 
+                color: #ffffff !important; 
+                border-bottom: 1px solid #475569; 
+                padding-bottom: 5px; 
+                margin-top: 25px; 
+            }
+            
+            /* TABELA - JASNE TŁO, CZARNY TEKST */
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 10px; 
+                background-color: #f1f5f9; /* Bardzo jasny szary (prawie biały) */
+            }
+            
+            th, td { 
+                border: 1px solid #334155; 
+                padding: 10px; 
+                text-align: left; 
+                vertical-align: top; 
+                color: #000000 !important; /* CZARNY TEKST */
+            }
+            
+            th { 
+                background-color: #cbd5e1; /* Szary nagłówek tabeli */
+                font-weight: bold;
+            }
+            
             strong { color: #818cf8; }
         </style>
         """
@@ -233,13 +254,13 @@ elif st.session_state.step == 5:
         # Renderowanie podglądu
         components.html(dark_preview_css + st.session_state.final_report, height=800, scrolling=True)
         
-        # Do pobrania (Wersja jasna - do druku)
+        # Do pobrania (Klasyczny biały do druku)
         clean_print_css = """
         <style>
             body { font-family: 'Times New Roman', serif; padding: 40px; color: black; line-height: 1.6; }
-            h2 { color: #003366; border-bottom: 1px solid #ccc; }
+            h2 { color: #000000; border-bottom: 1px solid #ccc; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid black; padding: 8px; }
+            th, td { border: 1px solid black; padding: 8px; color: black; }
             th { background-color: #f0f0f0; }
         </style>
         """
