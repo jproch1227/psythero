@@ -119,7 +119,7 @@ INFO = {
     "zach": "Co zrobił / Czego uniknął?",
     "koszt": "Skutek: Krótka ulga vs Długi koszt.",
     "hipo": "Mechanizmy podtrzymujące.",
-    "zasoby": "WAŻNE: Nie tylko wsparcie zewnętrzne, ale też ZASOBY POZNAWCZE (wgląd, intelekt, wytrwałość, gotowość do pracy)."
+    "zasoby": "Wsparcie społeczne, inteligencja, wgląd, gotowość do pracy. Unikaj wpisywania 'brak'."
 }
 
 # --- PANEL BOCZNY ---
@@ -225,12 +225,17 @@ elif st.session_state.step == 5:
             try:
                 client = genai.Client(api_key=api_key)
                 
-                # --- ZAAWANSOWANY PROMPT SPEŁNIAJĄCY NOWE WYMAGANIA ---
+                # --- PROMPT V3.0: ZAAWANSOWANA LOGIKA KLINICZNA ---
                 prompt_clinical = f"""
-                Jesteś ekspertem-superwizorem CBT. Wygeneruj zaawansowaną konceptualizację przypadku w CZYSTYM HTML.
-                Używaj profesjonalnego języka klinicznego.
+                Jesteś ekspertem-superwizorem CBT. Wygeneruj profesjonalną konceptualizację w CZYSTYM HTML.
                 
-                DANE PACJENTA:
+                DYREKTYWY BEZPIECZEŃSTWA I SPÓJNOŚCI (WAŻNE):
+                1. HIPOTEZY: Każda hipoteza rozwojowa musi mieć oznaczony poziom pewności (np. "Hipoteza (Pewność: Średnia)").
+                2. ZASOBY: Nigdy nie pisz "Brak zasobów". Używaj określeń: "Zasoby sytuacyjnie niedostępne", "Niestabilne", "Ograniczone".
+                3. JĘZYK CBT: W Planie Interwencji używaj terminologii CBT. Zamiast "Terapii Schematów" pisz "Praca z Przekonaniami Kluczowymi" lub "Restrukturyzacja Poznawcza".
+                4. CELE SMART: Muszą być BEHAWIORALNE (co pacjent zrobi/zmieni w zachowaniu), a nie tylko emocjonalne (mniej lęku).
+                
+                DANE:
                 ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko: {st.session_state.ryzyko}
                 Historia: {st.session_state.historia}, Problemy: {st.session_state.problemy}
                 Zasoby (input): {st.session_state.zasoby}
@@ -240,40 +245,35 @@ elif st.session_state.step == 5:
                 WYMAGANA STRUKTURA RAPORTU (HTML):
                 
                 <h2>1. Fakty vs. Hipotezy</h2>
-                (Stwórz tabelę z dwiema kolumnami. 
-                Kolumna 1: 'Fakty Kliniczne' - tylko to, co pacjent zgłosił i co jest obserwowalne. 
-                Kolumna 2: 'Hipotezy Kliniczne do Weryfikacji' - Twoje interpretacje, np. funkcje zachowań, schematy, co wymaga sprawdzenia.)
+                (Tabela 2 kolumny: 'Fakty Kliniczne' [obserwowalne] vs 'Hipotezy Kliniczne do Weryfikacji' [interpretacje z poziomem pewności])
                 
                 <h2>2. Główne Mechanizmy Podtrzymujące (CBT)</h2>
-                (Wypunktuj konkretne mechanizmy CBT, które blokują zmianę. Np. 'Unikanie sytuacyjne', 'Ruminacje poekspozycyjne', 'Brak korekty przekonań'. Nazwij je fachowo.)
+                (Wypunktuj konkretne błędne koła, np. Unikanie -> Ulga -> Wzrost lęku.)
                 
                 <h2>3. Interakcja Diagnostyczna</h2>
-                (Jeśli występują współwystępujące diagnozy, np. ADHD i Lęk, opisz w 3-4 zdaniach jak na siebie wpływają. Np. 'Deficyty uwagi zwiększają ryzyko porażki społecznej, co nasila lęk'.)
+                (Jeśli zaznaczono wiele diagnoz, np. ADHD i Lęk, opisz krótko ich wzajemny wpływ. Jeśli jedna diagnoza, pomiń.)
                 
-                <h2>4. Konceptualizacja 5P (Case Formulation)</h2>
-                (Tabela HTML: Problem Aktualny, Czynniki Predysponujące, Wyzwalające, Podtrzymujące, Chroniące.)
+                <h2>4. Konceptualizacja 5P</h2>
+                (Tabela HTML. W sekcji 'Czynniki Chroniące' uwzględnij zasoby, nawet jeśli są ukryte.)
                 
                 <h2>5. Zasoby Wspierające Terapię</h2>
-                (Wypunktuj zasoby dzieląc je na:
-                - Społeczne/Zewnętrzne
-                - Poznawcze/Osobiste (np. wgląd, gotowość do eksperymentów, inteligencja - wywnioskuj je z opisu))
+                (Wypunktuj: Społeczne [realistycznie opisane] oraz Poznawcze [wgląd, motywacja, inteligencja].)
                 
-                <h2>6. Analiza Funkcjonalna (Tu i Teraz)</h2>
-                (Tabela Pętli Becka: Sytuacja, Myśl, Emocja, Zachowanie, Konsekwencje)
+                <h2>6. Analiza Funkcjonalna (Pętla Becka)</h2>
+                (Tabela 5 kolumn.)
                 
                 <h2>7. Mapa Interwencji (Plan Terapii)</h2>
-                (Tabela łącząca problem z techniką. Kolumny: 'Mechanizm/Problem' -> 'Proponowana Interwencja CBT'.
-                Np. Unikanie -> Drabina ekspozycji; Ruminacje -> Trening uważności.)
+                (Tabela: 'Mechanizm/Problem' -> 'Technika CBT'. Np. Niskie poczucie własnej wartości -> Praca nad przekonaniami kluczowymi / Budowanie nowej narracji o sobie.)
                 
-                <h2>8. Wskaźniki Trafności Konceptualizacji</h2>
-                (Odpowiedz na pytanie: 'Po czym poznamy, że nasza konceptualizacja jest trafna?'. Wypunktuj 3 konkretne, mierzalne zmiany u pacjenta, które potwierdzą hipotezy.)
+                <h2>8. Wskaźniki Trafności (Feedback Loop)</h2>
+                (Po czym poznamy, że konceptualizacja jest trafna? 3 mierzalne zmiany w zachowaniu.)
                 
                 <h2>9. Cele SMART i Plan Bezpieczeństwa</h2>
-                (Krótko cele i tabela bezpieczeństwa jeśli dotyczy).
+                (Cele behawioralne: Zwiększenie inicjatywy vs Zmniejszenie lęku.)
                 """
                 
-                with st.spinner('Analiza mechanizmów podtrzymujących i generowanie konceptualizacji...'):
-                    config = types.GenerateContentConfig(temperature=0.0) # Precyzja > Kreatywność
+                with st.spinner('Analiza mechanizmów i weryfikacja hipotez...'):
+                    config = types.GenerateContentConfig(temperature=0.0) 
                     response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_clinical, config=config)
                     st.session_state.final_report = extract_pure_html(response.text)
             except Exception as e: st.error(f"Błąd: {e}")
@@ -308,7 +308,6 @@ elif st.session_state.step == 5:
                 
                 DANE:
                 Diagnoza: {diagnoza_str}
-                Zasoby: {st.session_state.zasoby}
                 Myśl: {st.session_state.p_mysl}
                 
                 STRUKTURA:
@@ -316,11 +315,11 @@ elif st.session_state.step == 5:
                     <h1 style="color:#0369a1; margin:0;">Moja Karta Pracy CBT</h1>
                 </div>
                 <h2>1. Twoje Mocne Strony</h2>
-                (Odwołaj się do zasobów pacjenta).
+                (Przypomnienie zasobów).
                 <h2>2. Co się dzisiaj działo?</h2>
-                (Psychoedukacja o myślach i emocjach).
-                <h2>3. Eksperyment na ten tydzień</h2>
-                (Zadanie behawioralne).
+                (Psychoedukacja).
+                <h2>3. Eksperyment Behawioralny</h2>
+                (Zaproponuj małe działanie/test rzeczywistości, a nie tylko 'myślenie pozytywne').
                 """
                 
                 with st.spinner('Przygotowywanie materiałów...'):
