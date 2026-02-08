@@ -107,17 +107,21 @@ with st.sidebar:
 # KROK 1
 if st.session_state.step == 1:
     st.markdown("### 🔵 Krok 1: Dane podstawowe")
-    col1, col2 = st.columns(2)
-    with col1:
-        render_label("ID Pacjenta", "Unikalny numer.")
-        st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
-        render_label("Diagnoza", INFO["diag"])
-        st.session_state.diagnoza = st.text_input("lbl", value=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed")
-    with col2:
-        render_label("Terapeuta", "Imię i nazwisko.")
-        st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
+    
+    # UKŁAD WERTYKALNY (Jeden pod drugim)
+    
+    render_label("ID Pacjenta", "Unikalny numer.")
+    st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
+    
+    render_label("Terapeuta", "Imię i nazwisko.")
+    st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
+    
+    render_label("Diagnoza", INFO["diag"])
+    st.session_state.diagnoza = st.text_input("lbl", value=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed")
+    
     render_label("Ryzyko / Bezpieczeństwo", INFO["ryz"])
     st.session_state.ryzyko = st.text_area("lbl", value=st.session_state.ryzyko, key="widget_ryzyko", label_visibility="collapsed")
+    
     if st.button("Dalej ➡️"): st.session_state.step = 2; st.rerun()
 
 # KROK 2
@@ -227,7 +231,6 @@ elif st.session_state.step == 5:
         else:
             try:
                 client = genai.Client(api_key=api_key)
-                # Prompt dedykowany dla pacjenta (prosty język, empatia)
                 prompt_patient = f"""
                 Jesteś empatycznym terapeutą CBT. Stwórz "Kartę Pracy" dla pacjenta w formacie CZYSTEGO HTML.
                 Używaj języka prostego, motywującego i zrozumiałego dla osoby w kryzysie. Żadnego żargonu lekarskiego.
@@ -254,7 +257,7 @@ elif st.session_state.step == 5:
                 """
                 
                 with st.spinner('Przygotowywanie materiałów edukacyjnych...'):
-                    config = types.GenerateContentConfig(temperature=0.7) # Tu chcemy odrobinę kreatywności/empatii
+                    config = types.GenerateContentConfig(temperature=0.7)
                     response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_patient, config=config)
                     st.session_state.patient_homework = extract_pure_html(response.text)
             except Exception as e: st.error(f"Błąd: {e}")
@@ -262,7 +265,6 @@ elif st.session_state.step == 5:
     # Wyświetlanie Karty Pacjenta
     if st.session_state.patient_homework:
         with st.expander("🎓 Podgląd Karty Pacjenta", expanded=True):
-            # Stylizacja "Przyjazna" (jasna, pastelowa, czytelna)
             patient_css = """<style>
                 body { background-color: #ffffff; color: #334155; font-family: 'Segoe UI', sans-serif; padding: 20px; }
                 h1, h2 { color: #0284c7; border-bottom: 2px solid #e0f2fe; padding-bottom: 10px; margin-top: 20px; }
@@ -271,5 +273,4 @@ elif st.session_state.step == 5:
             </style>"""
             components.html(patient_css + st.session_state.patient_homework, height=600, scrolling=True)
             
-            # Pobieranie
             st.download_button("💾 Pobierz Zadanie Domowe (HTML)", f"<html><head>{patient_css}</head><body>{st.session_state.patient_homework}</body></html>", file_name=f"zadanie_domowe_{st.session_state.id_p}.html")
