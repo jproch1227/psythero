@@ -32,7 +32,6 @@ ICD_10_LIST = [
 ]
 
 # --- INICJALIZACJA STANU ---
-# Dodałem 'zasoby' do listy kluczy
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
         'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'zasoby', 'hipotezy', 'final_report', 'patient_homework']
 
@@ -195,21 +194,19 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.markdown("### 🔵 Krok 4: Kontekst i Zasoby")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        render_label("Relacja Terapeutyczna", "Opis współpracy.")
-        st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
-        
-        render_label("Historia / Rodzina", "Tło historyczne.")
-        st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
-        
-    with col2:
-        # --- NOWE POLE: ZASOBY ---
-        render_label("Zasoby i Mocne Strony", INFO["zasoby"])
-        st.session_state.zasoby = st.text_area("lbl", value=st.session_state.zasoby, key="widget_zasoby", label_visibility="collapsed")
-        
-        render_label("Hipotezy kliniczne", INFO["hipo"])
-        st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
+    # --- UKŁAD WERTYKALNY (JEDEN POD DRUGIM) ---
+    
+    render_label("Relacja Terapeutyczna", "Opis współpracy.")
+    st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
+    
+    render_label("Historia / Rodzina", "Tło historyczne.")
+    st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
+    
+    render_label("Zasoby i Mocne Strony", INFO["zasoby"])
+    st.session_state.zasoby = st.text_area("lbl", value=st.session_state.zasoby, key="widget_zasoby", label_visibility="collapsed")
+    
+    render_label("Hipotezy kliniczne", INFO["hipo"])
+    st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
     if c1.button("⬅️ Wstecz"): st.session_state.step = 3; st.rerun()
@@ -228,7 +225,6 @@ elif st.session_state.step == 5:
         else:
             try:
                 client = genai.Client(api_key=api_key)
-                # Dodałem "Zasoby" do promptu
                 prompt_clinical = f"""
                 Jesteś superwizorem CBT. Wygeneruj raport w CZYSTYM HTML. Bez markdown. Bez instrukcji.
                 
