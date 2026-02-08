@@ -7,7 +7,7 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- LISTA DIAGNOZ ICD-10 (Bez pustego pola, bo multiselect jest domyślnie pusty) ---
+# --- LISTA DIAGNOZ ICD-10 ---
 ICD_10_LIST = [
     "F32 - Epizod depresyjny",
     "F33 - Zaburzenia depresyjne nawracające",
@@ -32,12 +32,12 @@ ICD_10_LIST = [
 ]
 
 # --- INICJALIZACJA STANU ---
+# Dodałem 'zasoby' do listy kluczy
 keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw', 
-        'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'hipotezy', 'final_report', 'patient_homework']
+        'p_sit', 'p_mysl', 'p_emocja', 'p_zach', 'p_koszt', 'relacja', 'historia', 'zasoby', 'hipotezy', 'final_report', 'patient_homework']
 
 for key in keys:
     if key not in st.session_state:
-        # Dla diagnozy domyślna wartość to pusta lista [], dla reszty pusty string ""
         if key == 'diagnoza':
             st.session_state[key] = []
         else:
@@ -61,7 +61,7 @@ st.markdown("""
     }
     .stTextInput input:focus, .stTextArea textarea:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important; }
     
-    /* Kolor tekstu w liście rozwijanej i tagach */
+    /* Kolory list rozwijanych */
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #1e293b !important; color: white !important; }
     span[data-baseweb="tag"] { background-color: #3b82f6 !important; color: white !important; }
 
@@ -110,8 +110,8 @@ def extract_pure_html(text):
 
 # --- SŁOWNIK POMOCY ---
 INFO = {
-    "diag": "Możesz wybrać wiele diagnoz (współwystępowanie).",
-    "ryz": "Myśli S., plany, czynniki chroniące.",
+    "diag": "Możesz wybrać wiele diagnoz.",
+    "ryz": "Myśli S., plany, dostępność środków.",
     "prob": "Główne objawy i problemy.",
     "mysl": "Cytaty myśli automatycznych.",
     "syt": "Kto? Gdzie? Kiedy?",
@@ -119,7 +119,8 @@ INFO = {
     "emo": "Uczucia i reakcje ciała.",
     "zach": "Co zrobił / Czego uniknął?",
     "koszt": "Skutek: Krótka ulga vs Długi koszt.",
-    "hipo": "Mechanizmy podtrzymujące."
+    "hipo": "Mechanizmy podtrzymujące.",
+    "zasoby": "Mocne strony, wsparcie społeczne, hobby, inteligencja, motywacja."
 }
 
 # --- PANEL BOCZNY ---
@@ -146,21 +147,12 @@ if st.session_state.step == 1:
     render_label("Terapeuta", "Imię i nazwisko.")
     st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
     
-    # --- ZMIANA: MULTISELECT ---
     render_label("Diagnoza (Wybór wielokrotny)", INFO["diag"])
-    
-    # Zabezpieczenie: upewnij się, że w stanie jest lista
     if not isinstance(st.session_state.diagnoza, list):
         st.session_state.diagnoza = []
-
     selected_diag = st.multiselect(
-        "lbl", 
-        options=ICD_10_LIST, 
-        default=st.session_state.diagnoza, # Pobiera listę
-        key="widget_diag", 
-        label_visibility="collapsed"
+        "lbl", options=ICD_10_LIST, default=st.session_state.diagnoza, key="widget_diag", label_visibility="collapsed"
     )
-    # Zapisujemy listę do stanu
     st.session_state.diagnoza = selected_diag
     
     render_label("Ryzyko / Bezpieczeństwo", INFO["ryz"])
@@ -201,13 +193,24 @@ elif st.session_state.step == 3:
 
 # KROK 4
 elif st.session_state.step == 4:
-    st.markdown("### 🔵 Krok 4: Kontekst")
-    render_label("Relacja Terapeutyczna", "Opis współpracy.")
-    st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
-    render_label("Historia / Rodzina", "Tło historyczne.")
-    st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
-    render_label("Hipotezy kliniczne", INFO["hipo"])
-    st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
+    st.markdown("### 🔵 Krok 4: Kontekst i Zasoby")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        render_label("Relacja Terapeutyczna", "Opis współpracy.")
+        st.session_state.relacja = st.text_area("lbl", value=st.session_state.relacja, key="widget_relacja", label_visibility="collapsed")
+        
+        render_label("Historia / Rodzina", "Tło historyczne.")
+        st.session_state.historia = st.text_area("lbl", value=st.session_state.historia, key="widget_historia", label_visibility="collapsed")
+        
+    with col2:
+        # --- NOWE POLE: ZASOBY ---
+        render_label("Zasoby i Mocne Strony", INFO["zasoby"])
+        st.session_state.zasoby = st.text_area("lbl", value=st.session_state.zasoby, key="widget_zasoby", label_visibility="collapsed")
+        
+        render_label("Hipotezy kliniczne", INFO["hipo"])
+        st.session_state.hipotezy = st.text_area("lbl", value=st.session_state.hipotezy, key="widget_hipotezy", label_visibility="collapsed")
+    
     c1, c2 = st.columns(2)
     if c1.button("⬅️ Wstecz"): st.session_state.step = 3; st.rerun()
     if c2.button("Dalej ➡️"): st.session_state.step = 5; st.rerun()
@@ -216,10 +219,8 @@ elif st.session_state.step == 4:
 elif st.session_state.step == 5:
     st.markdown("### 🚀 Krok 5: Generowanie")
     
-    # Przygotowanie stringa z diagnozami (lista -> tekst po przecinku)
     diagnoza_str = ", ".join(st.session_state.diagnoza) if isinstance(st.session_state.diagnoza, list) else st.session_state.diagnoza
     
-    # --- SEKCJA 1: RAPORT KLINICZNY ---
     st.subheader("1. Dokumentacja Kliniczna (Dla Specjalisty)")
     
     if st.button("GENERUJ RAPORT SUPERWIZYJNY", key="btn_clinical"):
@@ -227,17 +228,21 @@ elif st.session_state.step == 5:
         else:
             try:
                 client = genai.Client(api_key=api_key)
+                # Dodałem "Zasoby" do promptu
                 prompt_clinical = f"""
                 Jesteś superwizorem CBT. Wygeneruj raport w CZYSTYM HTML. Bez markdown. Bez instrukcji.
                 
                 DANE:
                 ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko: {st.session_state.ryzyko}
                 Historia: {st.session_state.historia}, Problemy: {st.session_state.problemy}
+                ZASOBY I MOCNE STRONY: {st.session_state.zasoby}
+                
                 PĘTLA: Syt: {st.session_state.p_sit}, Myśl: {st.session_state.p_mysl}, Emo: {st.session_state.p_emocja}, Zach: {st.session_state.p_zach}, Koszt: {st.session_state.p_koszt}
                 
                 STRUKTURA HTML:
                 <h2>1. Dane Kliniczne</h2>
                 <h2>2. Konceptualizacja 5P (Tabela HTML)</h2>
+                (Pamiętaj: w sekcji 'Czynniki Chroniące' wykorzystaj podane Zasoby pacjenta)
                 <h2>3. Analiza Funkcjonalna (Tabela Pętli Becka)</h2>
                 <h2>4. Triada i Zniekształcenia</h2>
                 <h2>5. Tabela Padesky'ego (Restrukturyzacja)</h2>
@@ -251,7 +256,6 @@ elif st.session_state.step == 5:
                     st.session_state.final_report = extract_pure_html(response.text)
             except Exception as e: st.error(f"Błąd: {e}")
 
-    # Wyświetlanie Raportu Klinicznego
     if st.session_state.final_report:
         with st.expander("📄 Podgląd Raportu Klinicznego", expanded=True):
             dark_css = """<style>
@@ -259,17 +263,15 @@ elif st.session_state.step == 5:
                 h1, h2, h3 { color: #ffffff !important; border-bottom: 1px solid #475569; margin-top: 30px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #f8fafc; }
                 th, td { border: 1px solid #cbd5e1; padding: 12px; color: #0f172a !important; }
-                th { background-color: #e2e8f0; font-weight: bold; }
+                th { background-color: #e2e8f0; font-weight: bold; text-transform: uppercase; }
             </style>"""
             components.html(dark_css + st.session_state.final_report, height=600, scrolling=True)
             
-            # Pobieranie Raportu
             print_css = """<style>body{font-family:'Times New Roman',serif;padding:40px;color:black}table{width:100%;border-collapse:collapse}th,td{border:1px solid black;padding:8px}th{background:#f0f0f0}</style>"""
             st.download_button("💾 Pobierz Raport Kliniczny (HTML)", f"<html><head>{print_css}</head><body>{st.session_state.final_report}</body></html>", file_name=f"raport_{st.session_state.id_p}.html")
 
     st.markdown("---")
     
-    # --- SEKCJA 2: MATERIAŁY DLA PACJENTA ---
     st.subheader("2. Materiały dla Pacjenta (Zadanie Domowe)")
     
     if st.button("GENERUJ KARTĘ PRACY DLA PACJENTA", key="btn_patient"):
@@ -280,27 +282,26 @@ elif st.session_state.step == 5:
                 client = genai.Client(api_key=api_key)
                 prompt_patient = f"""
                 Jesteś empatycznym terapeutą CBT. Stwórz "Kartę Pracy" dla pacjenta w formacie CZYSTEGO HTML.
-                Używaj języka prostego, motywującego i zrozumiałego dla osoby w kryzysie. Żadnego żargonu lekarskiego.
+                Używaj języka prostego, motywującego.
                 
                 DANE:
                 Diagnoza: {diagnoza_str}
-                Sytuacja trudna: {st.session_state.p_sit}
+                Zasoby: {st.session_state.zasoby}
                 Myśl automatyczna: {st.session_state.p_mysl}
                 
-                STRUKTURA DOKUMENTU DLA PACJENTA:
+                STRUKTURA:
                 <div class="header" style="text-align:center; padding:20px; background:#e0f2fe; border-radius:10px;">
                     <h1 style="color:#0369a1; margin:0;">Moja Karta Pracy CBT</h1>
-                    <p style="color:#0c4a6e;">Materiały wspierające do sesji</p>
                 </div>
                 
-                <h2>1. Co się dzisiaj działo? (Psychoedukacja)</h2>
-                (Wyjaśnij pacjentowi w 3 zdaniach, jak jego myśl "{st.session_state.p_mysl}" wpłynęła na to, że poczuł "{st.session_state.p_emocja}". Użyj metafory "okularów przez które patrzymy na świat".)
+                <h2>1. Twoje Mocne Strony (Przypominajka)</h2>
+                (Odwołaj się do zasobów: {st.session_state.zasoby}, aby wzmocnić poczucie własnej wartości pacjenta.)
                 
-                <h2>2. Twoje Zadanie na ten tydzień</h2>
-                (Zaproponuj 1 konkretne, małe zadanie behawioralne oparte na przełamaniu unikania. Np. "Spróbuj raz dziennie...". Ma to być eksperyment.)
+                <h2>2. Co się dzisiaj działo? (Psychoedukacja)</h2>
+                (Wyjaśnij mechanizm myśli i emocji.)
                 
-                <h2>3. Karta Przypominajka (Do wycięcia)</h2>
-                (Stwórz ramkę z krótkim tekstem, który pacjent może przeczytać w trudnej chwili. Np. "Pamiętaj, że myśl to nie fakt..." + myśl alternatywna).
+                <h2>3. Eksperyment na ten tydzień</h2>
+                (Zadanie behawioralne.)
                 """
                 
                 with st.spinner('Przygotowywanie materiałów edukacyjnych...'):
