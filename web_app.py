@@ -7,9 +7,8 @@ import re
 # --- KONFIGURACJA ---
 st.set_page_config(page_title="CBT Clinical Pro", layout="wide", initial_sidebar_state="expanded")
 
-# --- LISTA DIAGNOZ ICD-10 (Dedykowana dla CBT) ---
+# --- LISTA DIAGNOZ ICD-10 (Bez pustego pola, bo multiselect jest domyślnie pusty) ---
 ICD_10_LIST = [
-    "",  # Puste pole na start
     "F32 - Epizod depresyjny",
     "F33 - Zaburzenia depresyjne nawracające",
     "F31 - Zaburzenia afektywne dwubiegunowe",
@@ -38,7 +37,11 @@ keys = ['id_p', 'terapeuta', 'diagnoza', 'ryzyko', 'problemy', 'mysli_raw',
 
 for key in keys:
     if key not in st.session_state:
-        st.session_state[key] = ""
+        # Dla diagnozy domyślna wartość to pusta lista [], dla reszty pusty string ""
+        if key == 'diagnoza':
+            st.session_state[key] = []
+        else:
+            st.session_state[key] = ""
 
 if 'step' not in st.session_state:
     st.session_state.step = 1
@@ -51,16 +54,17 @@ st.markdown("""
     section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%); border-right: 1px solid #334155; }
     div[data-testid="stWidgetLabel"] { display: none; }
 
-    /* Pola tekstowe i Selectbox */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
+    /* Pola tekstowe i Selectbox/Multiselect */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div, .stMultiSelect div[data-baseweb="select"] > div {
         background-color: #1e293b !important; color: #f8fafc !important;
         border: 1px solid #334155 !important; border-radius: 8px !important;
     }
     .stTextInput input:focus, .stTextArea textarea:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 1px #6366f1 !important; }
     
-    /* Naprawa koloru tekstu w liście rozwijanej (Selectbox dropdown) */
+    /* Kolor tekstu w liście rozwijanej i tagach */
     ul[data-testid="stSelectboxVirtualDropdown"] li { background-color: #1e293b !important; color: white !important; }
-    
+    span[data-baseweb="tag"] { background-color: #3b82f6 !important; color: white !important; }
+
     /* Przyciski */
     .stButton > button {
         background: linear-gradient(90deg, #4f46e5, #7c3aed); color: white; border: none;
@@ -106,7 +110,7 @@ def extract_pure_html(text):
 
 # --- SŁOWNIK POMOCY ---
 INFO = {
-    "diag": "Wybierz kod ICD-10 z listy.",
+    "diag": "Możesz wybrać wiele diagnoz (współwystępowanie).",
     "ryz": "Myśli S., plany, czynniki chroniące.",
     "prob": "Główne objawy i problemy.",
     "mysl": "Cytaty myśli automatycznych.",
@@ -136,30 +140,27 @@ with st.sidebar:
 if st.session_state.step == 1:
     st.markdown("### 🔵 Krok 1: Dane podstawowe")
     
-    # POLA JEDEN POD DRUGIM (UKŁAD WERTYKALNY)
-    
     render_label("ID Pacjenta", "Unikalny numer.")
     st.session_state.id_p = st.text_input("lbl", value=st.session_state.id_p, key="widget_id_p", label_visibility="collapsed")
     
     render_label("Terapeuta", "Imię i nazwisko.")
     st.session_state.terapeuta = st.text_input("lbl", value=st.session_state.terapeuta, key="widget_terapeuta", label_visibility="collapsed")
     
-    # --- ZMIANA: DIAGNOZA JAKO LISTA ROZWIJANA (SELECTBOX) ---
-    render_label("Diagnoza (ICD-10)", INFO["diag"])
+    # --- ZMIANA: MULTISELECT ---
+    render_label("Diagnoza (Wybór wielokrotny)", INFO["diag"])
     
-    # Obsługa domyślnej wartości dla selectboxa
-    default_ix = 0
-    if st.session_state.diagnoza in ICD_10_LIST:
-        default_ix = ICD_10_LIST.index(st.session_state.diagnoza)
-    
-    selected_diag = st.selectbox(
+    # Zabezpieczenie: upewnij się, że w stanie jest lista
+    if not isinstance(st.session_state.diagnoza, list):
+        st.session_state.diagnoza = []
+
+    selected_diag = st.multiselect(
         "lbl", 
         options=ICD_10_LIST, 
-        index=default_ix,
+        default=st.session_state.diagnoza, # Pobiera listę
         key="widget_diag", 
         label_visibility="collapsed"
     )
-    # Zapisujemy wybór do stanu
+    # Zapisujemy listę do stanu
     st.session_state.diagnoza = selected_diag
     
     render_label("Ryzyko / Bezpieczeństwo", INFO["ryz"])
@@ -215,6 +216,9 @@ elif st.session_state.step == 4:
 elif st.session_state.step == 5:
     st.markdown("### 🚀 Krok 5: Generowanie")
     
+    # Przygotowanie stringa z diagnozami (lista -> tekst po przecinku)
+    diagnoza_str = ", ".join(st.session_state.diagnoza) if isinstance(st.session_state.diagnoza, list) else st.session_state.diagnoza
+    
     # --- SEKCJA 1: RAPORT KLINICZNY ---
     st.subheader("1. Dokumentacja Kliniczna (Dla Specjalisty)")
     
@@ -227,7 +231,7 @@ elif st.session_state.step == 5:
                 Jesteś superwizorem CBT. Wygeneruj raport w CZYSTYM HTML. Bez markdown. Bez instrukcji.
                 
                 DANE:
-                ID: {st.session_state.id_p}, Diagnoza: {st.session_state.diagnoza}, Ryzyko: {st.session_state.ryzyko}
+                ID: {st.session_state.id_p}, Diagnoza: {diagnoza_str}, Ryzyko: {st.session_state.ryzyko}
                 Historia: {st.session_state.historia}, Problemy: {st.session_state.problemy}
                 PĘTLA: Syt: {st.session_state.p_sit}, Myśl: {st.session_state.p_mysl}, Emo: {st.session_state.p_emocja}, Zach: {st.session_state.p_zach}, Koszt: {st.session_state.p_koszt}
                 
@@ -279,7 +283,7 @@ elif st.session_state.step == 5:
                 Używaj języka prostego, motywującego i zrozumiałego dla osoby w kryzysie. Żadnego żargonu lekarskiego.
                 
                 DANE:
-                Diagnoza: {st.session_state.diagnoza}
+                Diagnoza: {diagnoza_str}
                 Sytuacja trudna: {st.session_state.p_sit}
                 Myśl automatyczna: {st.session_state.p_mysl}
                 
