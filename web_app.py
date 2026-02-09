@@ -272,6 +272,18 @@ elif st.session_state.step == 5:
                 
                 <h2>7. Psychoedukacja ("Zdanie Klucz")</h2>
                 (Jedno zdanie, metafora do powiedzenia pacjentowi, tłumacząca jego błędne koło.)
+
+                <h2>8. Analiza Neuroatypowa (ADHD + Lęk)</h2>
+                (Przeanalizuj zjawisko 'Maskowania' i kosztów energetycznych. Czy lęk wynika z nadwrażliwości sensorycznej lub obawy przed ujawnieniem objawów ADHD? Jak dostosować techniki CBT do deficytów wykonawczych pacjentki?)
+                
+                <h2>9. Cyrkularność Systemowa</h2>
+                (Opisz pętlę: Objaw pacjentki -> Reakcja otoczenia/rodziny -> Reakcja pacjentki -> Wzmocnienie objawu.)
+                
+                <h2>10. Mapa Motywacji i Wartości</h2>
+                (Co jest dla pacjentki ważne? Jak wykorzystać jej zainteresowania [np. siłownia] do budowania ekspozycji? Gdzie szukać dopaminy?)
+                
+                <h2>11. Hipoteza Relacyjna</h2>
+                (Jak schematy pacjentki mogą wpłynąć na relację z terapeutą? Ryzyko zerwania terapii, unikania, uległości?)
                 """
                 
                 with st.spinner('Analiza danych klinicznych...'):
@@ -293,3 +305,4 @@ elif st.session_state.step == 5:
     if st.button("GENERUJ KARTĘ PRACY"):
         # (Kod generowania karty pracy - taki sam jak wcześniej, korzystający z nowych zmiennych)
         pass
+
